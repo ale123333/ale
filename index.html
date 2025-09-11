@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>限时限次链接生成器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+        body {
+            background-color: #f0f2f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        header {
+            text-align: center;
+            margin: 30px 0;
+        }
+        header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        header p {
+            color: #666;
+            font-size: 16px;
+        }
+        .generator-box {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .generator-box button {
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .generator-box button:hover {
+            background-color: #1d4ed8;
+        }
+        .link-result {
+            margin-top: 20px;
+            display: none;
+        }
+        .link-result input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        .link-result .btn-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        .link-result .btn-group button {
+            background-color: #64748b;
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+        .link-result .btn-group button:hover {
+            background-color: #475569;
+        }
+        .history-box {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+        }
+        .history-box h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+        .history-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border-top: 1px solid #eee;
+        }
+        .history-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .history-item .link-info {
+            flex: 1;
+        }
+        .history-item .link-info p {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .history-item .link-status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .status-active {
+            background-color: #dcfce7;
+            color: #16a34a;
+        }
+        .status-expired {
+            background-color: #fee2e2;
+            color: #dc2626;
+        }
+        .empty-hint {
+            text-align: center;
+            color: #9ca3af;
+            padding: 30px 0;
+            font-size: 14px;
+        }
+        /* 访问页面样式 */
+        .access-container {
+            max-width: 600px;
+            margin: 100px auto;
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+        .access-container h1 {
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+        .access-container .target-link {
+            display: inline-block;
+            margin: 20px 0;
+            padding: 12px 24px;
+            background-color: #2563eb;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            transition: background 0.3s;
+        }
+        .access-container .target-link:hover {
+            background-color: #1d4ed8;
+        }
+        .access-container .info {
+            color: #666;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 生成器页面（默认显示） -->
+    <div id="generator-page" class="container">
+        <header>
+            <h1>限时限次链接生成器</h1>
+            <p>生成指向指定内容的链接，自动生效30分钟，最多打开3次</p>
+        </header>
+
+        <div class="generator-box">
+            <button id="generateBtn">生成新链接</button>
+            <div id="linkResult" class="link-result">
+                <input type="text" id="generatedLinkInput" readonly>
+                <div class="btn-group">
+                    <button id="copyBtn">复制链接</button>
+                    <button id="testBtn">测试链接</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="history-box">
+            <h2>生成历史</h2>
+            <div id="historyList" class="history-list">
+                <div class="empty-hint">暂无生成记录</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 访问页面（生成的链接指向这里） -->
+    <div id="access-page" class="access-container" style="display: none;">
+        <h1 id="accessStatus" class="valid">链接有效</h1>
+        <p id="accessDesc">点击下方链接访问内容</p>
+        <a href="https://c1nb.cn/KQItA" target="_blank" class="target-link" id="targetLink">打开目标内容</a>
+        <div class="info" id="accessInfo"></div>
+    </div>
+
+    <script>
+        // 核心配置
+        const CONFIG = {
+            targetUrl: "https://c1nb.cn/KQItA", // 目标内容链接
+            expireMinutes: 30, // 有效期（分钟）
+            maxViews: 3 // 最大打开次数
+        };
+
+        // 存储键名
+        const STORAGE_KEYS = {
+            linkHistory: "linkGeneratorHistory", // 生成历史
+            linkDataPrefix: "linkData_" // 单个链接的数据前缀
+        };
+
+        // 页面元素
+        const generatorPage = document.getElementById('generator-page');
+        const accessPage = document.getElementById('access-page');
+        const generateBtn = document.getElementById('generateBtn');
+        const linkResult = document.getElementById('linkResult');
+        const generatedLinkInput = document.getElementById('generatedLinkInput');
+        const copyBtn = document.getElementById('copyBtn');
+        const testBtn = document.getElementById('testBtn');
+        const historyList = document.getElementById('historyList');
+
+        // 生成历史管理
+        let linkHistory = JSON.parse(localStorage.getItem(STORAGE_KEYS.linkHistory) || '[]');
+
+        // 初始化：渲染历史记录
+        renderHistory();
+
+        // 生成新链接按钮点击事件
+        generateBtn.addEventListener('click', () => {
+            // 生成唯一链接ID（时间戳+随机数，确保不重复）
+            const linkId = `link_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+            
+            // 生成可访问的链接（当前页面URL+?id=linkId）
+            const currentUrl = window.location.href.split('?')[0];
+            const generatedLink = `${currentUrl}?id=${linkId}`;
+
+            // 初始化链接数据（创建时间、访问次数）
+            const linkData = {
+                linkId,
+                generatedLink,
+                createTime: new Date().getTime(),
+                views: 0,
+                isExpired: false
+            };
+
+            // 保存链接数据到本地存储
+            localStorage.setItem(`${STORAGE_KEYS.linkDataPrefix}${linkId}`, JSON.stringify(linkData));
+
+            // 添加到历史记录
+            linkHistory.unshift(linkData); // 插入到开头
+            saveHistory();
+            renderHistory();
+
+            // 显示生成结果
+            generatedLinkInput.value = generatedLink;
+            linkResult.style.display = 'block';
+        });
+
+        // 复制链接按钮点击事件
+        copyBtn.addEventListener('click', () => {
+            generatedLinkInput.select();
+            document.execCommand('copy');
+            alert('链接已复制到剪贴板！');
+        });
+
+        // 测试链接按钮点击事件
+        testBtn.addEventListener('click', () => {
+            window.open(generatedLinkInput.value, '_blank');
+        });
+
+        // 保存历史记录到本地存储
+        function saveHistory() {
+            localStorage.setItem(STORAGE_KEYS.linkHistory, JSON.stringify(linkHistory));
+        }
+
+        // 渲染历史记录
+        function renderHistory() {
+            if (linkHistory.length === 0) {
+                historyList.innerHTML = '<div class="empty-hint">暂无生成记录</div>';
+                return;
+            }
+
+            let html = '';
+            linkHistory.forEach(item => {
+                // 计算剩余时间和状态
+                const currentTime = new Date().getTime();
+                const expireTime = item.createTime + (CONFIG.expireMinutes * 60 * 1000);
+                const remainingTime = Math.ceil((expireTime - currentTime) / 60000);
+                const remainingViews = CONFIG.maxViews - item.views;
+                const isExpired = remainingTime <= 0 || remainingViews <= 0;
+
+                // 更新状态（如果已过期）
+                if (!item.isExpired && isExpired) {
+                    item.isExpired = true;
+                    saveHistory();
+                }
+
+                // 状态文本和样式
+                const statusText = isExpired ? '已失效' : '生效中';
+                const statusClass = isExpired ? 'status-expired' : 'status-active';
+
+                // 时间格式化
+                const createTimeStr = new Date(item.createTime).toLocaleString();
+
+                html += `
+                    <div class="history-item">
+                        <div class="link-info">
+                            <strong>${item.generatedLink}</strong>
+                            <p>生成时间：${createTimeStr} | 访问次数：${item.views}/${CONFIG.maxViews}</p>
+                        </div>
+                        <span class="link-status ${statusClass}">${statusText}</span>
+                    </div>
+                `;
+            });
+
+            historyList.innerHTML = html;
+        }
+
+        // 处理访问链接（当URL带?id参数时）
+        function handleAccessLink() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const linkId = urlParams.get('id');
+            
+            if (!linkId) return; // 没有id参数，显示生成器页面
+
+            // 获取链接数据
+            const linkDataStr = localStorage.getItem(`${STORAGE_KEYS.linkDataPrefix}${linkId}`);
+            if (!linkDataStr) {
+                // 链接不存在
+                showAccessPage(false, '链接不存在或已被删除', '');
+                return;
+            }
+
+            const linkData = JSON.parse(linkDataStr);
+            const currentTime = new Date().getTime();
+            const expireTime = linkData.createTime + (CONFIG.expireMinutes * 60 * 1000);
+            const remainingTime = Math.ceil((expireTime - currentTime) / 60000);
+            const remainingViews = CONFIG.maxViews - linkData.views;
+
+            // 检查是否失效
+            if (remainingTime <= 0 || remainingViews <= 0) {
+                showAccessPage(false, '该链接已超过有效时间或最大访问次数', '');
+                // 更新历史记录中的状态
+                updateHistoryStatus(linkId, true);
+                return;
+            }
+
+            // 更新访问次数
+            linkData.views++;
+            localStorage.setItem(`${STORAGE_KEYS.linkDataPrefix}${linkId}`, JSON.stringify(linkData));
+
+            // 更新历史记录中的访问次数
+            updateHistoryViews(linkId, linkData.views);
+
+            // 显示有效页面
+            const infoText = `剩余访问次数：${remainingViews - 1}次 / 剩余有效时间：约${remainingTime}分钟`;
+            showAccessPage(true, '', infoText);
+        }
+
+        // 显示访问页面
+        function showAccessPage(isValid, desc, info) {
+            generatorPage.style.display = 'none';
+            accessPage.style.display = 'block';
+
+            const accessStatus = document.getElementById('accessStatus');
+            const accessDesc = document.getElementById('accessDesc');
+            const accessInfo = document.getElementById('accessInfo');
+            const targetLink = document.getElementById('targetLink');
+
+            if (isValid) {
+                accessStatus.className = 'valid';
+                accessStatus.textContent = '链接有效';
+                accessDesc.textContent = '点击下方链接访问内容';
+                targetLink.style.display = 'inline-block';
+                accessInfo.textContent = info;
+            } else {
+                accessStatus.className = 'invalid';
+                accessStatus.textContent = '链接已失效';
+                accessDesc.textContent = desc;
+                targetLink.style.display = 'none';
+                accessInfo.textContent = `有效期：${CONFIG.expireMinutes}分钟 / 最大访问：${CONFIG.maxViews}次`;
+            }
+        }
+
+        // 更新历史记录中的访问次数
+        function updateHistoryViews(linkId, views) {
+            const index = linkHistory.findIndex(item => item.linkId === linkId);
+            if (index !== -1) {
+                linkHistory[index].views = views;
+                saveHistory();
+                renderHistory();
+            }
+        }
+
+        // 更新历史记录中的状态
+        function updateHistoryStatus(linkId, isExpired) {
+            const index = linkHistory.findIndex(item => item.linkId === linkId);
+            if (index !== -1) {
+                linkHistory[index].isExpired = isExpired;
+                saveHistory();
+                renderHistory();
+            }
+        }
+
+        // 初始化：检查是否是访问链接
+        handleAccessLink();
+    </script>
+</body>
+</html>
