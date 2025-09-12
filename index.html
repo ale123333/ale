@@ -1,859 +1,410 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>链接转发生成</title>
-  <script src="https://cdn.tailwindcss.com" defer></script>
-  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
-  
-  <style>
-    :root {
-      --tech-primary: #165DFF;
-      --tech-secondary: #7B2FFD;
-      --tech-accent: #36CFC9;
-      --tech-dark: #0F172A;
-      --tech-light: #F1F5F9;
-      --tech-gray: #1E293B;
-      --tech-gray-light: #334155;
-    }
-    
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    
-    body {
-      background-color: var(--tech-dark);
-      color: var(--tech-light);
-      font-family: 'Inter', system-ui, sans-serif;
-      min-height: 100vh;
-      padding: 1rem;
-    }
-    
-    .container {
-      max-width: 6xl;
-      margin: 0 auto;
-      padding: 0 1rem;
-    }
-    
-    .glass-effect {
-      background: rgba(30, 41, 59, 0.8);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      border-radius: 0.75rem;
-      border: 1px solid rgba(22, 93, 255, 0.3);
-      padding: 1.5rem;
-    }
-    
-    .btn-primary {
-      background: linear-gradient(to right, var(--tech-primary), var(--tech-secondary));
-      color: white;
-      border: none;
-      border-radius: 0.5rem;
-      padding: 0.75rem 1.5rem;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-    
-    input[type="text"],
-    input[type="password"],
-    input[type="number"] {
-      color: var(--tech-light) !important;
-      background-color: var(--tech-gray-light) !important;
-      border-color: rgba(22, 93, 255, 0.5) !important;
-    }
-    
-    .hidden {
-      display: none !important;
-    }
-    
-    .notification {
-      position: fixed;
-      bottom: 1.25rem;
-      left: 50%;
-      transform: translateX(-50%) translateY(100px);
-      padding: 0.75rem 1.25rem;
-      border-radius: 0.375rem;
-      background-color: rgba(30, 41, 59, 0.9);
-      color: white;
-      z-index: 1000;
-      transition: transform 0.3s ease;
-      max-width: 90%;
-    }
-    
-    .notification.show {
-      transform: translateX(-50%) translateY(0);
-    }
-    
-    .text-tech-light {
-      color: var(--tech-light) !important;
-    }
-    
-    .text-tech-light\/70 {
-      color: rgba(241, 245, 249, 0.7) !important;
-    }
-    
-    .text-tech-light\/60 {
-      color: rgba(241, 245, 249, 0.6) !important;
-    }
-    
-    .text-tech-light\/50 {
-      color: rgba(241, 245, 249, 0.5) !important;
-    }
-    
-    .text-tech-light\/40 {
-      color: rgba(241, 245, 249, 0.4) !important;
-    }
-
-    /* 评价星级样式 */
-    .rating-stars {
-      display: flex;
-      gap: 0.5rem;
-      margin: 1rem 0;
-    }
-    
-    .rating-star {
-      font-size: 2rem;
-      color: #4B5563;
-      cursor: pointer;
-      transition: color 0.2s ease;
-    }
-    
-    .rating-star.active {
-      color: #EAB308;
-    }
-    
-    .rating-star:hover {
-      color: #FBBF24;
-    }
-  </style>
-  
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            tech: {
-              primary: '#165DFF',
-              secondary: '#7B2FFD',
-              accent: '#36CFC9',
-              dark: '#0F172A',
-              light: '#F1F5F9',
-              gray: '#1E293B',
-              'gray-light': '#334155'
-            }
-          },
-          fontFamily: {
-            sans: ['Inter', 'system-ui', 'sans-serif']
-          }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>限时限次链接生成器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
         }
-      }
-    }
-  </script>
-  
-  <link rel="preload" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css"></noscript>
+        body {
+            background-color: #f0f2f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        header {
+            text-align: center;
+            margin: 30px 0;
+        }
+        header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        header p {
+            color: #666;
+            font-size: 16px;
+        }
+        .generator-box {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .generator-box button {
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .generator-box button:hover {
+            background-color: #1d4ed8;
+        }
+        .link-result {
+            margin-top: 20px;
+            display: none;
+        }
+        .link-result input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        .link-result .btn-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        .link-result .btn-group button {
+            background-color: #64748b;
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+        .link-result .btn-group button:hover {
+            background-color: #475569;
+        }
+        .history-box {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+        }
+        .history-box h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+        .history-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border-top: 1px solid #eee;
+        }
+        .history-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .history-item .link-info {
+            flex: 1;
+        }
+        .history-item .link-info p {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .history-item .link-status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .status-active {
+            background-color: #dcfce7;
+            color: #16a34a;
+        }
+        .status-expired {
+            background-color: #fee2e2;
+            color: #dc2626;
+        }
+        .empty-hint {
+            text-align: center;
+            color: #9ca3af;
+            padding: 30px 0;
+            font-size: 14px;
+        }
+        /* 访问页面样式 */
+        .access-container {
+            max-width: 600px;
+            margin: 100px auto;
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+        .access-container h1 {
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+        .access-container .target-link {
+            display: inline-block;
+            margin: 20px 0;
+            padding: 12px 24px;
+            background-color: #2563eb;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            transition: background 0.3s;
+        }
+        .access-container .target-link:hover {
+            background-color: #1d4ed8;
+        }
+        .access-container .info {
+            color: #666;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+    </style>
 </head>
+<body>
+    <!-- 生成器页面（默认显示） -->
+    <div id="generator-page" class="container">
+        <header>
+            <h1>限时限次链接生成器</h1>
+            <p>生成指向指定内容的链接，自动生效30分钟，最多打开3次</p>
+        </header>
 
-<body class="bg-tech-dark text-tech-light font-sans min-h-screen py-3">
-  <div id="decorative-bg" class="absolute inset-0 overflow-hidden pointer-events-none z-0 hidden">
-    <div class="absolute top-1/4 -left-12 w-40 h-40 bg-tech-primary/20 rounded-full blur-2xl"></div>
-    <div class="absolute bottom-1/3 -right-12 w-56 h-56 bg-tech-secondary/20 rounded-full blur-2xl"></div>
-  </div>
-
-  <div id="notification" class="notification">
-    <i class="fa fa-info-circle"></i>
-    <span id="notificationText"></span>
-    <span id="notificationAction" class="notification-action hidden"></span>
-  </div>
-
-  <div id="customConfirm" class="fixed inset-0 bg-tech-dark/70 backdrop-blur-sm flex items-center justify-center z-50 opacity-0 pointer-events-none transition-opacity duration-300">
-    <div class="confirm-dialog bg-tech-gray rounded-xl p-6 max-w-xs w-full mx-4 transform transition-transform duration-300 scale-95">
-      <div class="confirm-icon text-center mb-4">
-        <i class="fa fa-exclamation-triangle text-yellow-500 text-3xl"></i>
-      </div>
-      <div class="confirm-message text-center mb-4 text-tech-light" id="confirmMessage">
-        确定要执行此操作吗？
-      </div>
-      <div class="confirm-buttons flex gap-3">
-        <button id="cancelBtn" class="flex-1 bg-tech-gray-light border border-tech-primary/20 text-tech-light py-2 rounded-md hover:bg-tech-gray/80 transition-colors">取消</button>
-        <button id="confirmActionBtn" class="flex-1 bg-red-500 text-white py-2 rounded-md hover:bg-red-600 transition-colors">确认</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 密码验证弹窗 - 仅工具本身需要验证 -->
-  <div id="passwordModal" class="fixed inset-0 bg-tech-dark/95 backdrop-blur-md flex items-center justify-center z-50">
-    <div class="password-modal-content w-full max-w-md p-6 bg-tech-gray/80 border border-tech-primary/30 rounded-xl">
-      <div class="text-center mb-6">
-        <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-tech-primary/20 flex items-center justify-center">
-          <i class="fa fa-lock text-tech-primary text-2xl"></i>
-        </div>
-        <h2 class="text-xl font-bold bg-gradient-to-r from-tech-primary to-tech-secondary bg-clip-text text-transparent">验证</h2>
-      </div>
-      
-      <div class="space-y-4">
-        <div>
-          <label for="toolPassword" class="block text-sm text-tech-light/70 mb-1.5">
-            <i class="fa fa-key text-tech-accent mr-1"></i>访问密码
-          </label>
-          <input type="password" id="toolPassword" class="w-full bg-tech-gray-light border border-tech-primary/50 rounded-lg py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-tech-primary/50 transition-all" placeholder="请输入密码" autocomplete="off">
-          <p id="passwordError" class="text-red-400 text-xs mt-1.5 hidden">
-            <i class="fa fa-exclamation-circle mr-1"></i>密码错误，请重新输入
-          </p>
-        </div>
-        
-        <button id="verifyPasswordBtn" class="w-full btn-primary font-medium py-2.5 px-4 shadow-lg shadow-tech-primary/20 hover:shadow-tech-primary/40 transform hover:-translate-y-0.5 active:translate-y-0 text-sm">
-          <i class="fa fa-unlock-alt mr-1.5"></i>验证并解锁
-        </button>
-        
-        <p class="text-center text-tech-light/40 text-xs mt-2">
-      
-        </p>
-      </div>
-    </div>
-  </div>
-
-  <div id="generator-page" class="container mx-auto relative z-10 opacity-0 pointer-events-none transition-opacity 0.5s ease">
-    <header class="text-center mb-6 mt-4">
-      <h1 class="text-2xl font-bold bg-gradient-to-r from-tech-primary to-tech-secondary bg-clip-text text-transparent mb-2">链接转发生成</h1>
-      <p class="text-tech-light/70 max-w-xl mx-auto text-sm">安全分享，自动失效，保护链接访问权限</p>
-      <div class="w-32 h-0.5 bg-gradient-to-r from-tech-primary to-tech-secondary mx-auto mt-3 rounded-full"></div>
-    </header>
-
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-      <div class="lg:col-span-2">
-        <div class="glass-effect transform transition-all duration-300 hover:scale-[1.01]">
-          <div class="mb-4">
-            <label for="originalLink" class="block text-sm text-tech-light/70 mb-2">
-              <i class="fa fa-link text-tech-accent mr-1"></i>原始链接
-            </label>
-            <input type="text" id="originalLink" class="w-full bg-tech-gray-light border border-tech-primary/50 rounded-lg py-3 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-tech-primary/50 transition-all" placeholder="请输入要转发的链接" disabled>
-          </div>
-
-          <button id="generateBtn" class="w-full btn-primary font-medium py-3 px-6 shadow-lg shadow-tech-primary/20 hover:shadow-tech-primary/40 transform hover:-translate-y-0.5 active:translate-y-0 text-sm" disabled>
-            <i class="fa fa-magic mr-1.5"></i>生成转发链接
-          </button>
-
-          <div id="linkResult" class="mt-6 opacity-0 transition-all duration-500 scale-95">
-            <div class="relative mb-4">
-              <input type="text" id="generatedLinkInput" readonly class="w-full bg-tech-gray-light border border-tech-primary/50 rounded-lg py-3 px-4 pr-16 text-sm focus:outline-none focus:ring-2 focus:ring-tech-primary/50 transition-all" disabled>
-              <button id="copyBtn" class="absolute right-3 top-1/2 -translate-y-1/2 bg-tech-primary/20 hover:bg-tech-primary/30 text-tech-light p-2 rounded-md transition-colors text-xs" disabled>
-                <i class="fa fa-copy mr-1"></i>复制
-              </button>
-            </div>
-
-            <div class="flex gap-4">
-              <button id="testBtn" class="flex-1 bg-tech-gray-light hover:bg-tech-gray/80 text-tech-light py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center text-sm" disabled>
-                <i class="fa fa-external-link mr-2"></i>测试链接
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="glass-effect">
-        <h3 class="text-lg font-medium mb-4 flex items-center">
-          <i class="fa fa-sliders text-tech-accent mr-2 text-sm"></i>转发配置
-        </h3>
-        <div class="space-y-6">
-          <div>
-            <label class="block text-sm text-tech-light/70 mb-2">有效时间（分钟）</label>
-            <div class="flex items-center">
-              <input type="number" id="expireMinutes" value="5" min="1" max="1440" class="w-full bg-tech-gray-light border border-tech-primary/30 rounded-lg py-2.5 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-tech-primary" disabled>
-              <span class="ml-3 text-tech-light/50 text-sm">分钟</span>
-            </div>
-            <p class="text-tech-light/40 text-xs mt-1">设置链接有效时长，过期后无法访问</p>
-          </div>
-
-          <div>
-            <label class="block text-sm text-tech-light/70 mb-2">最大访问次数</label>
-            <div class="flex items-center">
-              <input type="number" id="maxViews" value="3" min="1" max="100" class="w-full bg-tech-gray-light border border-tech-primary/30 rounded-lg py-2.5 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-tech-primary" disabled>
-              <span class="ml-3 text-tech-light/50 text-sm">次</span>
-            </div>
-            <p class="text-tech-light/40 text-xs mt-1">设置链接可访问次数，达到上限后失效</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="glass-effect mb-6">
-      <div class="flex items-center justify-between mb-6">
-        <h2 class="text-lg font-semibold flex items-center">
-          <i class="fa fa-history text-tech-accent mr-2 text-sm"></i>历史记录
-        </h2>
-        <button id="clearHistory" class="text-sm text-tech-light/60 hover:text-tech-light transition-colors flex items-center" disabled>
-          <i class="fa fa-trash-o mr-2"></i>清空历史
-        </button>
-      </div>
-
-      <div id="historyList" class="max-h-64 overflow-y-auto pr-3">
-        <div class="empty-hint text-center py-10 text-tech-light/50">
-          <div class="w-16 h-16 mx-auto mb-4 text-tech-light/20">
-            <i class="fa fa-folder-open-o text-3xl"></i>
-          </div>
-          <p class="text-base">暂无转发记录，生成链接后将显示在此处</p>
-        </div>
-      </div>
-    </div>
-
-    <footer class="text-center mt-6 text-tech-light/40 text-sm">
-      <p>© 2025 Vcccc</p>
-    </footer>
-  </div>
-
-  <!-- 访问页面 - 生成的链接会显示此页面并自动跳转 -->
-  <div id="access-page" class="min-h-screen flex items-center justify-center p-4 relative z-10 hidden">
-    <div class="access-container glass-effect max-w-md w-full">
-      <div id="statusIcon" class="w-16 h-16 mx-auto mb-5 rounded-full bg-tech-primary/20 flex items-center justify-center">
-        <i class="fa fa-check text-tech-primary text-2xl"></i>
-      </div>
-
-      <h1 id="accessStatus" class="text-xl font-bold mb-3 text-center text-tech-primary">链接有效</h1>
-      <p id="accessDesc" class="text-center text-tech-light/70 mb-4 text-sm">正在跳转到目标内容...</p>
-
-      <a id="targetLink" href="" target="_blank" class="block text-center btn-primary py-3 px-6 shadow-lg shadow-tech-primary/20 hover:shadow-tech-primary/40 transition-all duration-300 mb-4 transform hover:-translate-y-0.5 active:translate-y-0 text-sm">
-        打开目标内容
-      </a>
-
-      <div class="info bg-tech-gray-light rounded-lg p-4 text-sm">
-        <div class="flex justify-between mb-2">
-          <span class="text-tech-light/60">剩余访问次数:</span>
-          <span id="remainingViews" class="text-tech-accent">2次</span>
-        </div>
-        <div class="flex justify-between">
-          <span class="text-tech-light/60">剩余有效时间:</span>
-          <span id="remainingTime" class="text-tech-accent">约4分钟</span>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 链接失效后显示的感谢评价页面 -->
-  <div id="thanks-page" class="min-h-screen flex items-center justify-center p-4 relative z-10 hidden">
-    <div class="thanks-container glass-effect max-w-md w-full p-6">
-      <div class="thanks-icon w-20 h-20 mx-auto mb-6 rounded-full bg-tech-accent/20 flex items-center justify-center">
-        <i class="fa fa-heart text-tech-accent text-3xl"></i>
-      </div>
-
-      <h1 class="text-2xl font-bold mb-3 text-center text-tech-light">感谢您的使用</h1>
-      <p class="text-center text-tech-light/70 mb-6 text-sm">您访问的链接已失效，期待下次为您提供更好的服务</p>
-
-      <!-- 评价区域 -->
-      <div class="rating-section mb-6">
-        <p class="text-center text-tech-light/80 mb-3 text-sm">请评价我们的服务：</p>
-        <div class="rating-stars flex justify-center">
-          <span class="rating-star" data-rating="1"><i class="fa fa-star"></i></span>
-          <span class="rating-star" data-rating="2"><i class="fa fa-star"></i></span>
-          <span class="rating-star" data-rating="3"><i class="fa fa-star"></i></span>
-          <span class="rating-star" data-rating="4"><i class="fa fa-star"></i></span>
-          <span class="rating-star" data-rating="5"><i class="fa fa-star"></i></span>
-        </div>
-      </div>
-
-      <button id="closeThanksBtn" class="w-full btn-primary font-medium py-3 px-6 shadow-lg shadow-tech-primary/20 hover:shadow-tech-primary/40 transform hover:-translate-y-0.5 active:translate-y-0 text-sm">
-        <i class="fa fa-times mr-1.5"></i>关闭页面
-      </button>
-    </div>
-  </div>
-
-  <div id="copyHint" class="absolute bg-tech-dark/90 text-tech-light px-3 py-1.5 rounded text-xs pointer-events-none opacity-0 transition-opacity 0.3s z-50">
-    按 Ctrl+C 复制，然后按 Esc
-  </div>
-
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      // 检查是否是访问生成的链接
-      const urlParams = new URLSearchParams(window.location.search);
-      const linkId = urlParams.get('id');
-      
-      if (linkId) {
-        // 如果是访问生成的链接，直接处理跳转逻辑
-        document.getElementById('passwordModal').classList.add('hidden');
-        initCoreFunctions();
-        document.getElementById('decorative-bg').classList.remove('hidden');
-      } else {
-        // 否则显示密码验证（工具本身需要验证）
-        initCoreFunctions();
-        setTimeout(() => {
-          document.getElementById('decorative-bg').classList.remove('hidden');
-        }, 500);
-      }
-    });
-
-    function initCoreFunctions() {
-      const STORAGE_KEYS = {
-        linkHistory: "wechatLinkHistory",
-        linkDataPrefix: "wechatLinkData_"
-      };
-      
-      let confirmCallback = null;
-      let linkHistory = JSON.parse(localStorage.getItem(STORAGE_KEYS.linkHistory) || '[]');
-      
-      const elements = {
-        notification: document.getElementById('notification'),
-        notificationText: document.getElementById('notificationText'),
-        notificationAction: document.getElementById('notificationAction'),
-        customConfirm: document.getElementById('customConfirm'),
-        confirmMessage: document.getElementById('confirmMessage'),
-        cancelBtn: document.getElementById('cancelBtn'),
-        confirmActionBtn: document.getElementById('confirmActionBtn'),
-        passwordModal: document.getElementById('passwordModal'),
-        toolPasswordInput: document.getElementById('toolPassword'),
-        verifyPasswordBtn: document.getElementById('verifyPasswordBtn'),
-        passwordError: document.getElementById('passwordError'),
-        generatorPage: document.getElementById('generator-page'),
-        originalLink: document.getElementById('originalLink'),
-        generateBtn: document.getElementById('generateBtn'),
-        linkResult: document.getElementById('linkResult'),
-        generatedLinkInput: document.getElementById('generatedLinkInput'),
-        copyBtn: document.getElementById('copyBtn'),
-        testBtn: document.getElementById('testBtn'),
-        historyList: document.getElementById('historyList'),
-        clearHistory: document.getElementById('clearHistory'),
-        expireMinutesInput: document.getElementById('expireMinutes'),
-        maxViewsInput: document.getElementById('maxViews'),
-        accessPage: document.getElementById('access-page'),
-        targetLink: document.getElementById('targetLink'),
-        statusIcon: document.getElementById('statusIcon'),
-        accessStatus: document.getElementById('accessStatus'),
-        accessDesc: document.getElementById('accessDesc'),
-        remainingViews: document.getElementById('remainingViews'),
-        remainingTime: document.getElementById('remainingTime'),
-        thanksPage: document.getElementById('thanks-page'),
-        closeThanksBtn: document.getElementById('closeThanksBtn'),
-        ratingStars: document.querySelectorAll('.rating-star'),
-        copyHint: document.getElementById('copyHint')
-      };
-
-      const protectedInputs = [
-        elements.originalLink,
-        elements.expireMinutesInput,
-        elements.maxViewsInput,
-        elements.generatedLinkInput
-      ];
-      
-      const protectedButtons = [
-        elements.generateBtn,
-        elements.copyBtn,
-        elements.testBtn,
-        elements.clearHistory
-      ];
-
-      function showNotification(message, type = 'info', actionText = '', actionCallback = null) {
-        elements.notificationText.textContent = message;
-        elements.notification.className = 'notification ' + type;
-        
-        if (actionText && actionCallback) {
-          elements.notificationAction.textContent = actionText;
-          elements.notificationAction.classList.remove('hidden');
-          
-          const handleAction = () => {
-            actionCallback();
-            elements.notification.classList.remove('show');
-            elements.notificationAction.classList.add('hidden');
-            elements.notificationAction.removeEventListener('click', handleAction);
-          };
-          
-          elements.notificationAction.addEventListener('click', handleAction);
-        } else {
-          elements.notificationAction.classList.add('hidden');
-        }
-        
-        elements.notification.classList.add('show');
-        
-        if (!actionText) {
-          setTimeout(() => {
-            elements.notification.classList.remove('show');
-          }, 3000);
-        }
-      }
-
-      function initConfirmDialog() {
-        elements.cancelBtn.addEventListener('click', () => {
-          elements.customConfirm.classList.remove('show');
-          confirmCallback = null;
-        });
-        
-        elements.confirmActionBtn.addEventListener('click', () => {
-          if (typeof confirmCallback === 'function') {
-            confirmCallback();
-          }
-          elements.customConfirm.classList.remove('show');
-          confirmCallback = null;
-        });
-        
-        elements.customConfirm.addEventListener('click', (e) => {
-          if (e.target === elements.customConfirm) {
-            elements.customConfirm.classList.remove('show');
-            confirmCallback = null;
-          }
-        });
-      }
-      
-      function showConfirm(message, callback) {
-        elements.confirmMessage.textContent = message;
-        confirmCallback = callback;
-        elements.customConfirm.classList.add('show');
-      }
-
-      function verifyPassword() {
-        const password = elements.toolPasswordInput.value.trim();
-        
-        if (password === '007') {
-          elements.passwordError.classList.add('hidden');
-          elements.passwordModal.style.opacity = '0';
-          
-          setTimeout(() => {
-            elements.passwordModal.style.display = 'none';
-            elements.generatorPage.style.opacity = '1';
-            elements.generatorPage.style.pointerEvents = 'auto';
-            unlockProtectedElements();
-          }, 300);
-        } else {
-          elements.passwordError.classList.remove('hidden');
-          elements.toolPasswordInput.classList.add('border-red-500');
-          
-          setTimeout(() => {
-            elements.toolPasswordInput.classList.remove('border-red-500');
-          }, 1000);
-        }
-      }
-
-      function unlockProtectedElements() {
-        protectedInputs.forEach(input => {
-          input.disabled = false;
-          input.classList.remove('opacity-50', 'cursor-not-allowed');
-        });
-        
-        protectedButtons.forEach(button => {
-          button.disabled = false;
-          button.classList.remove('opacity-50', 'cursor-not-allowed');
-          
-          if (button.id === 'clearHistory') {
-            button.classList.add('hover:bg-red-500/20', 'hover:text-red-400');
-          }
-        });
-      }
-
-      function copyToClipboard(text) {
-        return new Promise((resolve) => {
-          if (navigator.clipboard && window.isSecureContext) {
-            navigator.clipboard.writeText(text)
-              .then(() => resolve(true))
-              .catch(() => fallbackCopy(text, resolve));
-          } else {
-            fallbackCopy(text, resolve);
-          }
-        });
-      }
-      
-      function fallbackCopy(text, resolve) {
-        const textarea = document.createElement('textarea');
-        textarea.value = text;
-        textarea.style.position = 'fixed';
-        document.body.appendChild(textarea);
-        textarea.select();
-        
-        try {
-          const successful = document.execCommand('copy');
-          document.body.removeChild(textarea);
-          resolve(successful);
-        } catch (err) {
-          document.body.removeChild(textarea);
-          resolve(false);
-        }
-      }
-
-      function renderHistory() {
-        if (linkHistory.length === 0) {
-          elements.historyList.innerHTML = `
-            <div class="empty-hint text-center py-10 text-tech-light/50">
-              <div class="w-16 h-16 mx-auto mb-4 text-tech-light/20">
-                <i class="fa fa-folder-open-o text-3xl"></i>
-              </div>
-              <p class="text-base">暂无转发记录，生成链接后将显示在此处</p>
-            </div>
-          `;
-          
-          elements.clearHistory.disabled = true;
-          return;
-        }
-        
-        elements.clearHistory.disabled = false;
-        
-        let historyHTML = '';
-        linkHistory.forEach(item => {
-          const createDate = new Date(item.createTime);
-          const formattedTime = `${createDate.getHours().toString().padStart(2, '0')}:${createDate.getMinutes().toString().padStart(2, '0')}`;
-          
-          historyHTML += `
-            <div class="bg-tech-gray-light rounded-lg p-3 mb-3 hover:bg-tech-gray/80 transition-colors">
-              <div class="flex justify-between items-start mb-2">
-                <div class="text-sm truncate max-w-[70%] text-tech-light">${item.originalLink}</div>
-                <div class="text-tech-light/50 text-xs">${formattedTime}</div>
-              </div>
-              <div class="flex justify-between items-center text-xs">
-                <div class="flex items-center text-tech-light/70">
-                  <i class="fa fa-clock-o mr-1 text-tech-accent/70"></i>${item.expireMinutes}分钟
-                  <span class="mx-1.5">•</span>
-                  <i class="fa fa-eye mr-1 text-tech-accent/70"></i>${item.maxViews}次
+        <div class="generator-box">
+            <button id="generateBtn">生成新链接</button>
+            <div id="linkResult" class="link-result">
+                <input type="text" id="generatedLinkInput" readonly>
+                <div class="btn-group">
+                    <button id="copyBtn">复制链接</button>
+                    <button id="testBtn">测试链接</button>
                 </div>
-                <button class="copy-history-link text-tech-accent hover:text-tech-accent/80 transition-colors p-1" data-link="${item.generatedLink}">
-                  <i class="fa fa-copy"></i> 复制
-                </button>
-              </div>
             </div>
-          `;
-        });
-        
-        elements.historyList.innerHTML = historyHTML;
-      }
+        </div>
 
-      // 初始化评价星级功能
-      function initRatingStars() {
-        elements.ratingStars.forEach(star => {
-          star.addEventListener('click', () => {
-            const rating = parseInt(star.getAttribute('data-rating'));
+        <div class="history-box">
+            <h2>生成历史</h2>
+            <div id="historyList" class="history-list">
+                <div class="empty-hint">暂无生成记录</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 访问页面（生成的链接指向这里） -->
+    <div id="access-page" class="access-container" style="display: none;">
+        <h1 id="accessStatus" class="valid">链接有效</h1>
+        <p id="accessDesc">点击下方链接访问内容</p>
+        <a href="https://c1nb.cn/KQItA" target="_blank" class="target-link" id="targetLink">打开目标内容</a>
+        <div class="info" id="accessInfo"></div>
+    </div>
+
+    <script>
+        // 核心配置
+        const CONFIG = {
+            targetUrl: "https://c1nb.cn/KQItA", // 目标内容链接
+            expireMinutes: 30, // 有效期（分钟）
+            maxViews: 3 // 最大打开次数
+        };
+
+        // 存储键名
+        const STORAGE_KEYS = {
+            linkHistory: "linkGeneratorHistory", // 生成历史
+            linkDataPrefix: "linkData_" // 单个链接的数据前缀
+        };
+
+        // 页面元素
+        const generatorPage = document.getElementById('generator-page');
+        const accessPage = document.getElementById('access-page');
+        const generateBtn = document.getElementById('generateBtn');
+        const linkResult = document.getElementById('linkResult');
+        const generatedLinkInput = document.getElementById('generatedLinkInput');
+        const copyBtn = document.getElementById('copyBtn');
+        const testBtn = document.getElementById('testBtn');
+        const historyList = document.getElementById('historyList');
+
+        // 生成历史管理
+        let linkHistory = JSON.parse(localStorage.getItem(STORAGE_KEYS.linkHistory) || '[]');
+
+        // 初始化：渲染历史记录
+        renderHistory();
+
+        // 生成新链接按钮点击事件
+        generateBtn.addEventListener('click', () => {
+            // 生成唯一链接ID（时间戳+随机数，确保不重复）
+            const linkId = `link_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
             
-            // 更新星级显示
-            elements.ratingStars.forEach(s => {
-              const sRating = parseInt(s.getAttribute('data-rating'));
-              if (sRating <= rating) {
-                s.classList.add('active');
-              } else {
-                s.classList.remove('active');
-              }
-            });
-            
-            // 可以在这里添加评价提交逻辑
-            showNotification(`感谢您的${rating}星评价！`, 'success');
-          });
-        });
-      }
+            // 生成可访问的链接（当前页面URL+?id=linkId）
+            const currentUrl = window.location.href.split('?')[0];
+            const generatedLink = `${currentUrl}?id=${linkId}`;
 
-      // 处理生成的链接访问逻辑，失效后显示感谢评价页面
-      function handleLinkAccess() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const linkId = urlParams.get('id');
-        
-        if (!linkId) {
-          // 不是访问生成的链接，显示工具主界面
-          elements.generatorPage.classList.remove('hidden');
-          elements.accessPage.classList.add('hidden');
-          elements.thanksPage.classList.add('hidden');
-          return;
-        }
-        
-        // 是访问生成的链接，检查是否有效
-        const linkDataStr = localStorage.getItem(`${STORAGE_KEYS.linkDataPrefix}${linkId}`);
-        
-        // 链接不存在 - 显示感谢页面
-        if (!linkDataStr) {
-          elements.generatorPage.classList.add('hidden');
-          elements.accessPage.classList.add('hidden');
-          elements.thanksPage.classList.remove('hidden');
-          return;
-        }
-        
-        const linkData = JSON.parse(linkDataStr);
-        const now = new Date().getTime();
-        
-        // 链接已过期 - 显示感谢页面
-        if (now > linkData.expiresAt) {
-          elements.generatorPage.classList.add('hidden');
-          elements.accessPage.classList.add('hidden');
-          elements.thanksPage.classList.remove('hidden');
-          return;
-        }
-        
-        // 访问次数已达上限 - 显示感谢页面
-        if (linkData.currentViews >= linkData.maxViews) {
-          elements.generatorPage.classList.add('hidden');
-          elements.accessPage.classList.add('hidden');
-          elements.thanksPage.classList.remove('hidden');
-          return;
-        }
-        
-        // 链接有效，更新访问次数
-        linkData.currentViews++;
-        localStorage.setItem(`${STORAGE_KEYS.linkDataPrefix}${linkId}`, JSON.stringify(linkData));
-        
-        // 显示跳转页面并自动跳转
-        elements.generatorPage.classList.add('hidden');
-        elements.accessPage.classList.remove('hidden');
-        elements.thanksPage.classList.add('hidden');
-        elements.targetLink.href = linkData.originalLink;
-        
-        // 计算剩余时间
-        const remainingMinutes = Math.ceil((linkData.expiresAt - now) / (60 * 1000));
-        elements.remainingTime.textContent = `约${remainingMinutes}分钟`;
-        
-        // 计算剩余访问次数
-        const remainingViewsCount = linkData.maxViews - linkData.currentViews;
-        elements.remainingViews.textContent = `${remainingViewsCount}次`;
-        
-        // 自动跳转
-        let countdown = 2;
-        const countdownInterval = setInterval(() => {
-          countdown--;
-          elements.accessDesc.textContent = `将在${countdown}秒后自动跳转到目标内容...`;
-          
-          if (countdown <= 0) {
-            clearInterval(countdownInterval);
-            window.location.href = linkData.originalLink;
-          }
-        }, 1000);
-      }
+            // 初始化链接数据（创建时间、访问次数）
+            const linkData = {
+                linkId,
+                generatedLink,
+                createTime: new Date().getTime(),
+                views: 0,
+                isExpired: false
+            };
 
-      function bindEvents() {
-        // 密码验证（仅工具本身需要）
-        elements.verifyPasswordBtn.addEventListener('click', verifyPassword);
-        elements.toolPasswordInput.addEventListener('keypress', (e) => {
-          if (e.key === 'Enter') verifyPassword();
-        });
-        
-        // 生成链接
-        elements.generateBtn.addEventListener('click', () => {
-          const inputValue = elements.originalLink.value.trim();
-          if (!inputValue) {
-            showNotification('请输入要转发的链接', 'error');
-            return;
-          }
-          
-          const linkId = `wechatLink_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-          const currentUrl = window.location.href.split('?')[0];
-          const generatedLink = `${currentUrl}?id=${linkId}`;
-          const expireMinutes = parseInt(elements.expireMinutesInput.value) || 5;
-          const maxViews = parseInt(elements.maxViewsInput.value) || 3;
-          
-          const linkData = {
-            linkId,
-            generatedLink,
-            originalLink: inputValue,
-            createTime: new Date().getTime(),
-            expireMinutes,
-            maxViews,
-            currentViews: 0,
-            expiresAt: new Date().getTime() + (expireMinutes * 60 * 1000)
-          };
-          
-          localStorage.setItem(`${STORAGE_KEYS.linkDataPrefix}${linkId}`, JSON.stringify(linkData));
-          
-          linkHistory.unshift({
-            linkId,
-            generatedLink,
-            originalLink: inputValue,
-            createTime: new Date().getTime(),
-            expireMinutes,
-            maxViews
-          });
-          
-          if (linkHistory.length > 20) linkHistory = linkHistory.slice(0, 20);
-          
-          localStorage.setItem(STORAGE_KEYS.linkHistory, JSON.stringify(linkHistory));
-          
-          elements.generatedLinkInput.value = generatedLink;
-          elements.linkResult.classList.add('opacity-100', 'scale-100');
-          renderHistory();
-          showNotification('转发链接生成成功', 'success');
-        });
-        
-        // 复制按钮
-        elements.copyBtn.addEventListener('click', () => {
-          const textToCopy = elements.generatedLinkInput.value;
-          if (!textToCopy) return;
-          
-          const originalText = elements.copyBtn.innerHTML;
-          elements.copyBtn.disabled = true;
-          
-          copyToClipboard(textToCopy)
-            .then(success => {
-              if (success) {
-                elements.copyBtn.innerHTML = '<i class="fa fa-check mr-1"></i>已复制';
-                showNotification('链接已复制到剪贴板', 'success');
-              } else {
-                showNotification('复制失败，请手动复制', 'error');
-              }
-              
-              setTimeout(() => {
-                elements.copyBtn.innerHTML = originalText;
-                elements.copyBtn.disabled = false;
-              }, 2000);
-            });
-        });
-        
-        // 测试链接
-        elements.testBtn.addEventListener('click', () => {
-          const link = elements.generatedLinkInput.value;
-          if (link) window.open(link, '_blank');
-          else showNotification('请先生成转发链接', 'error');
-        });
-        
-        // 清空历史
-        elements.clearHistory.addEventListener('click', () => {
-          if (linkHistory.length === 0) {
-            showNotification('没有可清空的历史记录', 'info');
-            return;
-          }
-          
-          showConfirm('确定要清空所有转发历史记录吗？此操作不可恢复。', () => {
-            linkHistory.forEach(item => {
-              localStorage.removeItem(`${STORAGE_KEYS.linkDataPrefix}${item.linkId}`);
-            });
-            localStorage.removeItem(STORAGE_KEYS.linkHistory);
-            linkHistory = [];
+            // 保存链接数据到本地存储
+            localStorage.setItem(`${STORAGE_KEYS.linkDataPrefix}${linkId}`, JSON.stringify(linkData));
+
+            // 添加到历史记录
+            linkHistory.unshift(linkData); // 插入到开头
+            saveHistory();
             renderHistory();
-            showNotification('历史记录已清空', 'success');
-          });
-        });
-        
-        // 历史记录中的复制按钮
-        elements.historyList.addEventListener('click', (e) => {
-          const copyBtn = e.target.closest('.copy-history-link');
-          if (copyBtn) {
-            const link = copyBtn.getAttribute('data-link');
-            if (link) {
-              const originalHTML = copyBtn.innerHTML;
-              copyBtn.disabled = true;
-              
-              copyToClipboard(link)
-                .then(success => {
-                  if (success) {
-                    copyBtn.innerHTML = '<i class="fa fa-check"></i> 已复制';
-                    showNotification('链接已复制到剪贴板', 'success');
-                  } else {
-                    showNotification('复制失败，请手动复制', 'error');
-                  }
-                  
-                  setTimeout(() => {
-                    copyBtn.innerHTML = originalHTML;
-                    copyBtn.disabled = false;
-                  }, 2000);
-                });
-            }
-          }
-        });
-        
-        // 感谢页面关闭按钮
-        elements.closeThanksBtn.addEventListener('click', () => {
-          window.close();
-          // 备用方案，如浏览器不允许自动关闭
-          setTimeout(() => window.close(), 1000);
-        });
-      }
 
-      // 初始化功能
-      initConfirmDialog();
-      initRatingStars();
-      renderHistory();
-      bindEvents();
-      handleLinkAccess();
-    }
-  </script>
+            // 显示生成结果
+            generatedLinkInput.value = generatedLink;
+            linkResult.style.display = 'block';
+        });
+
+        // 复制链接按钮点击事件
+        copyBtn.addEventListener('click', () => {
+            generatedLinkInput.select();
+            document.execCommand('copy');
+            alert('链接已复制到剪贴板！');
+        });
+
+        // 测试链接按钮点击事件
+        testBtn.addEventListener('click', () => {
+            window.open(generatedLinkInput.value, '_blank');
+        });
+
+        // 保存历史记录到本地存储
+        function saveHistory() {
+            localStorage.setItem(STORAGE_KEYS.linkHistory, JSON.stringify(linkHistory));
+        }
+
+        // 渲染历史记录
+        function renderHistory() {
+            if (linkHistory.length === 0) {
+                historyList.innerHTML = '<div class="empty-hint">暂无生成记录</div>';
+                return;
+            }
+
+            let html = '';
+            linkHistory.forEach(item => {
+                // 计算剩余时间和状态
+                const currentTime = new Date().getTime();
+                const expireTime = item.createTime + (CONFIG.expireMinutes * 60 * 1000);
+                const remainingTime = Math.ceil((expireTime - currentTime) / 60000);
+                const remainingViews = CONFIG.maxViews - item.views;
+                const isExpired = remainingTime <= 0 || remainingViews <= 0;
+
+                // 更新状态（如果已过期）
+                if (!item.isExpired && isExpired) {
+                    item.isExpired = true;
+                    saveHistory();
+                }
+
+                // 状态文本和样式
+                const statusText = isExpired ? '已失效' : '生效中';
+                const statusClass = isExpired ? 'status-expired' : 'status-active';
+
+                // 时间格式化
+                const createTimeStr = new Date(item.createTime).toLocaleString();
+
+                html += `
+                    <div class="history-item">
+                        <div class="link-info">
+                            <strong>${item.generatedLink}</strong>
+                            <p>生成时间：${createTimeStr} | 访问次数：${item.views}/${CONFIG.maxViews}</p>
+                        </div>
+                        <span class="link-status ${statusClass}">${statusText}</span>
+                    </div>
+                `;
+            });
+
+            historyList.innerHTML = html;
+        }
+
+        // 处理访问链接（当URL带?id参数时）
+        function handleAccessLink() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const linkId = urlParams.get('id');
+            
+            if (!linkId) return; // 没有id参数，显示生成器页面
+
+            // 获取链接数据
+            const linkDataStr = localStorage.getItem(`${STORAGE_KEYS.linkDataPrefix}${linkId}`);
+            if (!linkDataStr) {
+                // 链接不存在
+                showAccessPage(false, '链接不存在或已被删除', '');
+                return;
+            }
+
+            const linkData = JSON.parse(linkDataStr);
+            const currentTime = new Date().getTime();
+            const expireTime = linkData.createTime + (CONFIG.expireMinutes * 60 * 1000);
+            const remainingTime = Math.ceil((expireTime - currentTime) / 60000);
+            const remainingViews = CONFIG.maxViews - linkData.views;
+
+            // 检查是否失效
+            if (remainingTime <= 0 || remainingViews <= 0) {
+                showAccessPage(false, '该链接已超过有效时间或最大访问次数', '');
+                // 更新历史记录中的状态
+                updateHistoryStatus(linkId, true);
+                return;
+            }
+
+            // 更新访问次数
+            linkData.views++;
+            localStorage.setItem(`${STORAGE_KEYS.linkDataPrefix}${linkId}`, JSON.stringify(linkData));
+
+            // 更新历史记录中的访问次数
+            updateHistoryViews(linkId, linkData.views);
+
+            // 显示有效页面
+            const infoText = `剩余访问次数：${remainingViews - 1}次 / 剩余有效时间：约${remainingTime}分钟`;
+            showAccessPage(true, '', infoText);
+        }
+
+        // 显示访问页面
+        function showAccessPage(isValid, desc, info) {
+            generatorPage.style.display = 'none';
+            accessPage.style.display = 'block';
+
+            const accessStatus = document.getElementById('accessStatus');
+            const accessDesc = document.getElementById('accessDesc');
+            const accessInfo = document.getElementById('accessInfo');
+            const targetLink = document.getElementById('targetLink');
+
+            if (isValid) {
+                accessStatus.className = 'valid';
+                accessStatus.textContent = '链接有效';
+                accessDesc.textContent = '点击下方链接访问内容';
+                targetLink.style.display = 'inline-block';
+                accessInfo.textContent = info;
+            } else {
+                accessStatus.className = 'invalid';
+                accessStatus.textContent = '链接已失效';
+                accessDesc.textContent = desc;
+                targetLink.style.display = 'none';
+                accessInfo.textContent = `有效期：${CONFIG.expireMinutes}分钟 / 最大访问：${CONFIG.maxViews}次`;
+            }
+        }
+
+        // 更新历史记录中的访问次数
+        function updateHistoryViews(linkId, views) {
+            const index = linkHistory.findIndex(item => item.linkId === linkId);
+            if (index !== -1) {
+                linkHistory[index].views = views;
+                saveHistory();
+                renderHistory();
+            }
+        }
+
+        // 更新历史记录中的状态
+        function updateHistoryStatus(linkId, isExpired) {
+            const index = linkHistory.findIndex(item => item.linkId === linkId);
+            if (index !== -1) {
+                linkHistory[index].isExpired = isExpired;
+                saveHistory();
+                renderHistory();
+            }
+        }
+
+        // 初始化：检查是否是访问链接
+        handleAccessLink();
+    </script>
 </body>
 </html>
-    
