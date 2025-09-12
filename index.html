@@ -54,12 +54,33 @@
         <span id="success-message"></span>
     </div>
 
-    <!-- 密码验证界面 -->
+    <!-- 确认对话框 -->
+    <div id="confirm-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4 transform transition-all duration-300 scale-95 opacity-0" id="modal-content">
+            <div class="text-center mb-4">
+                <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fa fa-exclamation-triangle text-2xl text-red-500"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800">确认删除</h3>
+                <p class="text-gray-600 mt-2">确定要删除所有历史记录吗？此操作不可恢复。</p>
+            </div>
+            <div class="flex space-x-3 mt-6">
+                <button id="cancel-delete" class="flex-1 py-2 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-custom">
+                    取消
+                </button>
+                <button id="confirm-delete" class="flex-1 py-2 px-4 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-custom">
+                    确认删除
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 密码验证界面 - 工具访问 -->
     <div id="password-screen" class="min-h-screen flex items-center justify-center p-4">
         <div class="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden transform transition-all duration-500 hover:shadow-2xl">
             <div class="bg-gradient p-6 text-white text-center">
-                <i class="fa fa-link text-5xl mb-4 animate-pulse"></i>
-                <h1 class="text-[clamp(1.5rem,3vw,2rem)] font-bold text-shadow">临时链接工具</h1>
+                <i class="fa fa-lock text-5xl mb-4 animate-pulse"></i>
+                <h1 class="text-[clamp(1.5rem,3vw,2rem)] font-bold text-shadow">链接工具</h1>
                 <p class="opacity-90 mt-2">请输入访问密码</p>
             </div>
             <div class="p-6">
@@ -95,7 +116,7 @@
             <div class="container mx-auto px-4 py-4 flex justify-between items-center">
                 <div class="flex items-center space-x-2">
                     <i class="fa fa-link text-primary text-2xl"></i>
-                    <h1 class="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">临时链接生成器</h1>
+                    <h1 class="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">链接生成</h1>
                 </div>
                 <button id="logout-btn" class="text-gray-600 hover:text-red-500 flex items-center space-x-1 transition-custom">
                     <i class="fa fa-sign-out"></i>
@@ -109,7 +130,7 @@
             <div class="max-w-4xl mx-auto">
                 <!-- 链接生成表单 -->
                 <div class="bg-white rounded-2xl shadow-lg p-6 mb-8 transform transition-all duration-300 hover:shadow-xl">
-                    <h2 class="text-2xl font-bold mb-6 text-center">创建临时链接</h2>
+                    <h2 class="text-2xl font-bold mb-6 text-center">临时链接</h2>
                     
                     <form id="link-form" class="space-y-6">
                         <!-- 内容类型选择 -->
@@ -190,7 +211,7 @@
                         <button type="submit" id="generate-btn"
                             class="w-full bg-primary hover:bg-primary/90 text-white font-medium py-3 px-4 rounded-lg transition-custom flex items-center justify-center group">
                             <i class="fa fa-magic mr-2"></i>
-                            <span>生成临时链接</span>
+                            <span>生成链接</span>
                         </button>
                     </form>
                 </div>
@@ -223,6 +244,10 @@
                                 <span>最大访问次数: <span id="link-views" class="font-medium"></span></span>
                             </div>
                         </div>
+                        <div class="mt-3 text-sm text-gray-500">
+                            <i class="fa fa-info-circle text-primary mr-1"></i>
+                            <span>此链接无需密码即可访问</span>
+                        </div>
 
                         <div id="copy-notification" class="mt-4 text-center text-green-500 font-medium hidden">
                             <i class="fa fa-check-circle mr-1"></i>链接已复制到剪贴板
@@ -232,10 +257,16 @@
 
                 <!-- 历史记录 -->
                 <div class="mt-8">
-                    <h3 class="text-xl font-bold mb-4 flex items-center">
-                        <i class="fa fa-history text-primary mr-2"></i>
-                        最近生成的链接
-                    </h3>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold flex items-center">
+                            <i class="fa fa-history text-primary mr-2"></i>
+                            最近生成的链接
+                        </h3>
+                        <button id="clear-history" class="text-sm text-red-500 hover:text-red-600 flex items-center transition-custom opacity-70 hover:opacity-100 hidden">
+                            <i class="fa fa-trash mr-1"></i>
+                            <span>清空历史</span>
+                        </button>
+                    </div>
                     <div id="history-container" class="bg-white rounded-2xl shadow-lg overflow-hidden">
                         <div id="history-empty" class="p-8 text-center text-gray-500">
                             <i class="fa fa-inbox text-4xl mb-3 opacity-50"></i>
@@ -250,7 +281,7 @@
         <!-- 页脚 -->
         <footer class="bg-dark text-white py-6">
             <div class="container mx-auto px-4 text-center text-sm opacity-70">
-                <p>临时链接生成工具 &copy; 2023</p>
+                <p>链接生成 &copy; 2023</p>
                 <p class="mt-1">有疑问？可添加 <span class="text-secondary font-medium">wxid:kf123456</span> 咨询</p>
             </div>
         </footer>
@@ -268,17 +299,29 @@
                     <i class="fa fa-link-broken text-4xl text-red-500"></i>
                 </div>
                 <h2 class="text-2xl font-bold mb-3">链接已失效</h2>
-                <p class="text-gray-600 mb-6">感谢您的建议，该临时链接已过期或已达到最大访问次数</p>
+                <p class="text-gray-600 mb-6">该链接已过期或已达到最大访问次数</p>
             </div>
         </div>
     </div>
 
     <script>
-        // 全局状态管理
+        // 全局状态管理 - 使用localStorage持久化存储链接数据
         const appState = {
-            linkDatabase: {},
-            currentView: 'password', // password, tool, link
-            HISTORY_KEY: 'tempLinkHistory'
+            HISTORY_KEY: 'tempLinkHistory',
+            LINK_DATA_KEY: 'tempLinkData',
+            
+            // 获取所有链接数据
+            get linkDatabase() {
+                const data = localStorage.getItem(this.LINK_DATA_KEY);
+                return data ? JSON.parse(data) : {};
+            },
+            
+            // 保存链接数据
+            set linkDatabase(value) {
+                localStorage.setItem(this.LINK_DATA_KEY, JSON.stringify(value));
+            },
+            
+            currentView: 'password' // password, tool, link
         };
 
         // 工具函数 - 显示错误提示
@@ -307,14 +350,39 @@
             }, 3000);
         }
 
-        // 密码验证核心函数
+        // 显示确认对话框
+        function showConfirmDialog() {
+            const modal = document.getElementById('confirm-modal');
+            const modalContent = document.getElementById('modal-content');
+            
+            modal.classList.remove('hidden');
+            // 触发动画
+            setTimeout(() => {
+                modalContent.classList.remove('scale-95', 'opacity-0');
+                modalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        // 隐藏确认对话框
+        function hideConfirmDialog() {
+            const modal = document.getElementById('confirm-modal');
+            const modalContent = document.getElementById('modal-content');
+            
+            modalContent.classList.remove('scale-100', 'opacity-100');
+            modalContent.classList.add('scale-95', 'opacity-0');
+            
+            // 完全隐藏对话框
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        // 密码验证核心函数（仅用于工具访问）
         function validatePassword(password) {
-            // 实际应用中这里会是更安全的验证逻辑
-            // 当前默认密码为"007"
             return password === '007';
         }
 
-        // 处理密码提交
+        // 处理密码提交（仅用于工具访问）
         function handlePasswordSubmit(password) {
             const passwordScreen = document.getElementById('password-screen');
             const toolScreen = document.getElementById('tool-screen');
@@ -409,6 +477,9 @@
             const historyEmpty = document.getElementById('history-empty');
             const historyList = document.getElementById('history-list');
             const generateBtn = document.getElementById('generate-btn');
+            const clearHistoryBtn = document.getElementById('clear-history');
+            const confirmDeleteBtn = document.getElementById('confirm-delete');
+            const cancelDeleteBtn = document.getElementById('cancel-delete');
 
             // 内容类型切换
             document.querySelectorAll('input[name="content-type"]').forEach(function(radio) {
@@ -555,6 +626,10 @@
                             resetGenerateButton();
                             return;
                         }
+                        // 确保URL格式正确
+                        if (!content.startsWith('http://') && !content.startsWith('https://')) {
+                            content = 'https://' + content;
+                        }
                     } else if (contentType === 'text') {
                         content = textContent.value.trim();
                         if (!content) {
@@ -562,7 +637,6 @@
                             resetGenerateButton();
                             return;
                         }
-                        content += '\n\n相关服务：可联系 wxid:kf123456 获取更多帮助';
                     } else if (contentType === 'image') {
                         if (!previewImage.src || previewImage.src === window.location.href) {
                             showError('请上传图片');
@@ -589,15 +663,19 @@
                         return;
                     }
                     
-                    // 生成随机链接ID (8位字母数字)
-                    const linkId = generateRandomString(8);
+                    // 生成随机链接ID (12位字母数字，增加唯一性)
+                    const linkId = generateRandomString(12);
                     
                     // 计算过期时间
                     const expiryDate = new Date();
                     expiryDate.setMinutes(expiryDate.getMinutes() + expiryTime);
                     
-                    // 保存链接数据到全局数据库
-                    appState.linkDatabase[linkId] = {
+                    // 获取当前页面URL的基础部分（不包含查询参数）
+                    const baseUrl = window.location.href.split('?')[0];
+                    
+                    // 保存链接数据到本地存储
+                    const currentDatabase = appState.linkDatabase;
+                    currentDatabase[linkId] = {
                         id: linkId,
                         content: content,
                         type: contentType,
@@ -606,9 +684,10 @@
                         views: 0,
                         createdAt: new Date().getTime()
                     };
+                    appState.linkDatabase = currentDatabase;
                     
-                    // 构建完整链接
-                    const fullLink = window.location.href.split('?')[0] + '?id=' + linkId;
+                    // 构建完整链接（指向内容页面）
+                    const fullLink = `${baseUrl}?view=${linkId}`;
                     
                     // 显示结果
                     generatedLinkInput.value = fullLink;
@@ -617,7 +696,7 @@
                     resultContainer.classList.remove('hidden');
                     
                     // 添加到历史记录
-                    addToHistory(appState.linkDatabase[linkId], fullLink);
+                    addToHistory(currentDatabase[linkId], fullLink);
                     
                     // 滚动到结果区域
                     resultContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -630,7 +709,7 @@
                     imageName.classList.add('hidden');
                     imageContent.value = '';
                     
-                    showSuccess('临时链接生成成功');
+                    showSuccess('链接生成成功，将显示目标内容');
                     resetGenerateButton();
                     
                 } catch (error) {
@@ -642,7 +721,7 @@
                 // 重置按钮状态的辅助函数
                 function resetGenerateButton() {
                     generateBtn.disabled = false;
-                    generateBtn.innerHTML = '<i class="fa fa-magic mr-2"></i><span>生成临时链接</span>';
+                    generateBtn.innerHTML = '<i class="fa fa-magic mr-2"></i><span>生成链接</span>';
                 }
             }
 
@@ -702,7 +781,35 @@
                     loadHistory();
                 } catch (error) {
                     console.error('添加到历史记录出错:', error);
-                    // 不显示错误，因为这是辅助功能
+                }
+            }
+
+            // 清空所有历史记录
+            function clearAllHistory() {
+                try {
+                    // 清除历史记录
+                    localStorage.removeItem(appState.HISTORY_KEY);
+                    
+                    // 清除对应的链接数据
+                    const currentDatabase = appState.linkDatabase;
+                    const history = JSON.parse(localStorage.getItem(appState.HISTORY_KEY) || '[]');
+                    const historyIds = history.map(item => item.id);
+                    
+                    // 保留不在历史记录中的链接数据
+                    Object.keys(currentDatabase).forEach(id => {
+                        if (!historyIds.includes(id)) {
+                            delete currentDatabase[id];
+                        }
+                    });
+                    
+                    appState.linkDatabase = currentDatabase;
+                    
+                    // 更新显示
+                    loadHistory();
+                    showSuccess('所有历史记录已删除');
+                } catch (error) {
+                    console.error('清空历史记录出错:', error);
+                    showError('清空历史记录失败，请重试');
                 }
             }
 
@@ -710,6 +817,13 @@
             window.loadHistory = function() {
                 try {
                     const history = JSON.parse(localStorage.getItem(appState.HISTORY_KEY) || '[]');
+                    
+                    // 显示或隐藏"清空历史"按钮
+                    if (history.length > 0) {
+                        clearHistoryBtn.classList.remove('hidden');
+                    } else {
+                        clearHistoryBtn.classList.add('hidden');
+                    }
                     
                     if (history.length === 0) {
                         historyEmpty.classList.remove('hidden');
@@ -809,104 +923,153 @@
                             let history = JSON.parse(localStorage.getItem(appState.HISTORY_KEY) || '[]');
                             history = history.filter(function(item) { return item.id !== id; });
                             localStorage.setItem(appState.HISTORY_KEY, JSON.stringify(history));
+                            
+                            // 同时从链接数据库中删除
+                            const currentDatabase = appState.linkDatabase;
+                            if (currentDatabase[id]) {
+                                delete currentDatabase[id];
+                                appState.linkDatabase = currentDatabase;
+                            }
+                            
                             loadHistory();
                             showSuccess('记录已删除');
                         });
                     });
                 } catch (error) {
                     console.error('加载历史记录出错:', error);
-                    // 不显示错误，因为这是辅助功能
                 }
             }
+
+            // 绑定清空历史记录事件
+            clearHistoryBtn.addEventListener('click', showConfirmDialog);
+            confirmDeleteBtn.addEventListener('click', function() {
+                clearAllHistory();
+                hideConfirmDialog();
+            });
+            cancelDeleteBtn.addEventListener('click', hideConfirmDialog);
+            
+            // 点击模态框外部关闭
+            document.getElementById('confirm-modal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    hideConfirmDialog();
+                }
+            });
         }
 
         // 处理链接访问
         function handleLinkAccess() {
             try {
                 const urlParams = new URLSearchParams(window.location.search);
-                const linkId = urlParams.get('id');
+                const linkId = urlParams.get('view'); // 使用"view"参数区分内容访问
                 
-                // 如果有链接ID，尝试显示链接内容
-                if (linkId && appState.linkDatabase && appState.linkDatabase[linkId]) {
-                    const linkData = appState.linkDatabase[linkId];
-                    const now = new Date().getTime();
-                    
-                    // 检查链接是否过期或超过最大访问次数
-                    if (now > linkData.expiry || linkData.views >= linkData.maxViews) {
-                        document.getElementById('link-screen').classList.remove('hidden');
-                        document.getElementById('expired-message').classList.remove('hidden');
-                        appState.currentView = 'link';
-                        return;
-                    }
-                    
-                    // 更新访问次数
-                    linkData.views++;
-                    
-                    // 显示链接内容
-                    const container = document.getElementById('link-content-container');
-                    document.getElementById('link-screen').classList.remove('hidden');
-                    appState.currentView = 'link';
-                    
-                    switch(linkData.type) {
-                        case 'url':
-                            // 显示链接并自动跳转
-                            container.innerHTML = `
-                                <div class="text-center max-w-md">
-                                    <div class="bg-blue-50 p-6 rounded-xl mb-6">
-                                        <i class="fa fa-external-link text-4xl text-primary mb-4"></i>
-                                        <h2 class="text-xl font-bold mb-2">即将跳转到</h2>
-                                        <p class="text-gray-600 break-all">${linkData.content}</p>
-                                    </div>
-                                    <p class="text-gray-500 text-sm">
-                                        如果没有自动跳转，请点击下方链接
-                                    </p>
-                                    <a href="${linkData.content}" target="_blank" class="inline-block mt-4 bg-primary hover:bg-primary/90 text-white font-medium py-2 px-6 rounded-lg transition-custom">
-                                        点击访问
-                                    </a>
+                // 如果是访问工具本身（没有view参数），不做处理
+                if (!linkId) {
+                    return;
+                }
+                
+                // 隐藏其他所有界面，只显示链接内容界面
+                document.getElementById('password-screen').classList.add('hidden');
+                document.getElementById('tool-screen').classList.add('hidden');
+                const linkScreen = document.getElementById('link-screen');
+                linkScreen.classList.remove('hidden');
+                appState.currentView = 'link';
+                
+                // 获取链接数据
+                const linkData = appState.linkDatabase[linkId];
+                const now = new Date().getTime();
+                
+                // 检查链接是否存在、过期或超过最大访问次数
+                if (!linkData) {
+                    showLinkError('无效的链接');
+                    return;
+                }
+                
+                if (now > linkData.expiry) {
+                    showLinkError('链接已过期');
+                    return;
+                }
+                
+                if (linkData.views >= linkData.maxViews) {
+                    showLinkError('链接已达到最大访问次数');
+                    return;
+                }
+                
+                // 更新访问次数
+                const currentDatabase = appState.linkDatabase;
+                currentDatabase[linkId].views++;
+                appState.linkDatabase = currentDatabase;
+                
+                // 根据内容类型显示不同的目标内容
+                const container = document.getElementById('link-content-container');
+                
+                switch(linkData.type) {
+                    case 'url':
+                        // 显示网址内容（自动跳转）
+                        container.innerHTML = `
+                            <div class="text-center max-w-md">
+                                <div class="bg-blue-50 p-6 rounded-xl mb-6">
+                                    <i class="fa fa-external-link text-4xl text-primary mb-4"></i>
+                                    <h2 class="text-xl font-bold mb-2">即将跳转到目标网址</h2>
+                                    <p class="text-gray-600 break-all">${linkData.content}</p>
                                 </div>
-                            `;
-                            
-                            // 3秒后自动跳转
-                            setTimeout(() => {
-                                window.location.href = linkData.content;
-                            }, 3000);
-                            break;
-                            
-                        case 'text':
-                            // 显示文本内容
-                            container.innerHTML = `
-                                <div class="max-w-2xl bg-white p-6 rounded-xl shadow-md">
-                                    <div class="flex items-center mb-4">
-                                        <i class="fa fa-file-text-o text-primary mr-2"></i>
-                                        <h2 class="text-xl font-bold">文本内容</h2>
-                                    </div>
-                                    <div class="border-t pt-4 text-gray-700 whitespace-pre-line">${linkData.content}</div>
+                                <p class="text-gray-500 text-sm">
+                                    3秒后自动跳转，或点击下方链接
+                                </p>
+                                <a href="${linkData.content}" target="_blank" class="inline-block mt-4 bg-primary hover:bg-primary/90 text-white font-medium py-2 px-6 rounded-lg transition-custom">
+                                    立即访问
+                                </a>
+                            </div>
+                        `;
+                        
+                        // 3秒后自动跳转到目标网址
+                        setTimeout(() => {
+                            window.location.href = linkData.content;
+                        }, 3000);
+                        break;
+                        
+                    case 'text':
+                        // 显示文本内容
+                        container.innerHTML = `
+                            <div class="max-w-2xl bg-white p-6 rounded-xl shadow-md">
+                                <div class="flex items-center mb-4">
+                                    <i class="fa fa-file-text-o text-primary mr-2"></i>
+                                    <h2 class="text-xl font-bold">目标文本内容</h2>
                                 </div>
-                            `;
-                            break;
-                            
-                        case 'image':
-                            // 显示图片
-                            container.innerHTML = `
-                                <div class="max-w-2xl bg-white p-6 rounded-xl shadow-md text-center">
-                                    <div class="flex items-center justify-center mb-4">
-                                        <i class="fa fa-image text-primary mr-2"></i>
-                                        <h2 class="text-xl font-bold">图片</h2>
-                                    </div>
-                                    <img src="${linkData.content}" alt="分享的图片" class="max-w-full max-h-[70vh] rounded-lg mx-auto">
+                                <div class="border-t pt-4 text-gray-700 whitespace-pre-line">${linkData.content}</div>
+                            </div>
+                        `;
+                        break;
+                        
+                    case 'image':
+                        // 显示图片内容
+                        container.innerHTML = `
+                            <div class="max-w-2xl bg-white p-6 rounded-xl shadow-md text-center">
+                                <div class="flex items-center justify-center mb-4">
+                                    <i class="fa fa-image text-primary mr-2"></i>
+                                    <h2 class="text-xl font-bold">目标图片</h2>
                                 </div>
-                            `;
-                            break;
-                    }
+                                <img src="${linkData.content}" alt="分享的图片" class="max-w-full max-h-[70vh] rounded-lg mx-auto">
+                            </div>
+                        `;
+                        break;
                 }
             } catch (error) {
                 console.error('处理链接访问出错:', error);
-                // 链接访问页面出错时显示通用错误
-                document.getElementById('link-screen').classList.remove('hidden');
-                document.getElementById('expired-message').classList.remove('hidden');
-                document.querySelector('#expired-message h2').textContent = '访问出错';
-                document.querySelector('#expired-message p').textContent = '访问链接时发生错误，请尝试重新生成链接';
+                showLinkError('访问链接时发生错误');
             }
+        }
+        
+        // 显示链接错误信息
+        function showLinkError(message) {
+            const linkScreen = document.getElementById('link-screen');
+            const expiryMessage = document.getElementById('expired-message');
+            const linkContentContainer = document.getElementById('link-content-container');
+            
+            linkScreen.classList.remove('hidden');
+            linkContentContainer.classList.add('hidden');
+            expiryMessage.classList.remove('hidden');
+            document.querySelector('#expired-message h2').textContent = '访问失败';
+            document.querySelector('#expired-message p').textContent = message;
         }
 
         // 页面加载完成后初始化
@@ -943,6 +1106,18 @@
                 .pointer-events-none {
                     pointer-events: none;
                 }
+                .scale-95 {
+                    transform: scale(0.95);
+                }
+                .scale-100 {
+                    transform: scale(1);
+                }
+                .opacity-100 {
+                    opacity: 1;
+                }
+                .transition-all {
+                    transition: all 0.3s ease;
+                }
             `;
             document.head.appendChild(style);
 
@@ -956,19 +1131,13 @@
             // 表单提交事件
             passwordForm.addEventListener('submit', function(e) {
                 e.preventDefault();
-                e.stopPropagation();
-                
-                const password = passwordInput.value.trim();
-                handlePasswordSubmit(password);
+                handlePasswordSubmit(passwordInput.value.trim());
             });
 
             // 验证按钮点击事件
             verifyBtn.addEventListener('click', function(e) {
                 e.preventDefault();
-                e.stopPropagation();
-                
-                const password = passwordInput.value.trim();
-                handlePasswordSubmit(password);
+                handlePasswordSubmit(passwordInput.value.trim());
             });
 
             // 密码框回车键提交
