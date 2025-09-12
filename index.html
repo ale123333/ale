@@ -3,1477 +3,689 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>玩家建议收集</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Arial', sans-serif;
-        }
-        body {
-            background-color: #f0f2f5;
-            padding: 20px;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        header {
-            text-align: center;
-            margin: 30px 0;
-        }
-        header h1 {
-            color: #333;
-            margin-bottom: 10px;
-        }
-        header p {
-            color: #666;
-            font-size: 16px;
-        }
-        /* 密码验证弹窗 */
-        .password-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-        .modal-content {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            width: 90%;
-            max-width: 400px;
-            text-align: center;
-        }
-        .modal-content h2 {
-            color: #333;
-            margin-bottom: 20px;
-            font-size: 20px;
-        }
-        .modal-content .input-group {
-            margin-bottom: 20px;
-            text-align: left;
-        }
-        .modal-content label {
-            display: block;
-            color: #666;
-            margin-bottom: 8px;
-            font-size: 14px;
-        }
-        .modal-content input {
-            width: 100%;
-            padding: 12px 15px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
-        }
-        .modal-content .error-hint {
-            color: #dc2626;
-            font-size: 12px;
-            margin-top: 8px;
-            display: none;
-        }
-        .modal-content button {
-            width: 100%;
-            background-color: #2563eb;
-            color: white;
-            border: none;
-            padding: 12px 0;
-            border-radius: 6px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-        .modal-content button:hover {
-            background-color: #1d4ed8;
-        }
-        /* 生成器核心样式 */
-        .generator-box {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
-            margin-bottom: 30px;
-        }
-        .content-type-selector {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            overflow: hidden;
-        }
-        .content-type-option {
-            flex: 1;
-            padding: 12px;
-            text-align: center;
-            cursor: pointer;
-            background-color: #f8fafc;
-            transition: all 0.3s;
-        }
-        .content-type-option.active {
-            background-color: #2563eb;
-            color: white;
-        }
-        .generator-box .input-group {
-            margin-bottom: 20px;
-            text-align: left;
-        }
-        .generator-box label {
-            display: block;
-            color: #666;
-            margin-bottom: 8px;
-            font-size: 14px;
-        }
-        .generator-box input,
-        .generator-box select {
-            width: 100%;
-            padding: 12px 15px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
-        }
-        .image-upload-area {
-            border: 2px dashed #ddd;
-            border-radius: 6px;
-            padding: 30px;
-            text-align: center;
-            margin-bottom: 20px;
-            cursor: pointer;
-            transition: border-color 0.3s;
-            display: none;
-        }
-        .image-upload-area.active {
-            display: block;
-        }
-        .image-upload-area:hover {
-            border-color: #2563eb;
-        }
-        .image-upload-icon {
-            font-size: 40px;
-            color: #94a3b8;
-            margin-bottom: 15px;
-        }
-        .image-upload-text {
-            color: #666;
-            margin-bottom: 10px;
-        }
-        .image-preview {
-            margin-top: 20px;
-            max-width: 100%;
-            display: none;
-        }
-        .image-preview img {
-            max-width: 100%;
-            border-radius: 6px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        .generator-box .config-row {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        .generator-box .config-item {
-            flex: 1;
-        }
-        .generator-box button {
-            background-color: #2563eb;
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 6px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-        .generator-box button:hover {
-            background-color: #1d4ed8;
-        }
-        .result-area {
-            margin-top: 20px;
-            padding: 20px;
-            border-radius: 6px;
-            background-color: #f8fafc;
-            display: none;
-        }
-        .result-area.active {
-            display: block;
-        }
-        .result-area p {
-            margin-bottom: 15px;
-            color: #333;
-        }
-        .result-area .link-box {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        .result-area input {
-            flex: 1;
-            padding: 10px 15px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
-        }
-        .result-area .btn-group {
-            display: flex;
-            gap: 10px;
-        }
-        .result-area button {
-            padding: 10px 15px;
-            font-size: 14px;
-        }
-        /* 历史记录样式 */
-        .history-box {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
-        }
-        .history-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        .history-header h2 {
-            color: #333;
-            font-size: 18px;
-        }
-        .history-header button {
-            background: none;
-            border: none;
-            color: #dc2626;
-            cursor: pointer;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        .history-header button:hover {
-            color: #b91c1c;
-        }
-        .history-list {
-            margin-top: 20px;
-        }
-        .history-item {
-            padding: 15px;
-            border-radius: 6px;
-            background-color: #f8fafc;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .history-item .info {
-            flex: 1;
-        }
-        .history-item .content-type {
-            font-size: 12px;
-            color: #2563eb;
-            margin-bottom: 5px;
-            display: inline-block;
-        }
-        .history-item .url {
-            font-size: 14px;
-            color: #333;
-            margin-bottom: 5px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 400px;
-        }
-        .history-item .meta {
-            font-size: 12px;
-            color: #666;
-        }
-        .history-item .actions {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .history-item .status {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-        }
-        .status.active {
-            background-color: #dcfce7;
-            color: #166534;
-        }
-        .status.expired {
-            background-color: #fee2e2;
-            color: #b91c1c;
-        }
-        .history-item .delete-btn {
-            background: none;
-            border: none;
-            color: #94a3b8;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        .history-item .delete-btn:hover {
-            color: #dc2626;
-        }
-        .empty-hint {
-            text-align: center;
-            padding: 40px 0;
-            color: #94a3b8;
-            font-size: 16px;
-        }
-        /* 伪装的玩家建议收集页面样式 */
-        .suggestion-container {
-            max-width: 800px;
-            margin: 50px auto;
-            background: white;
-            padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
-        }
-        .suggestion-header {
-            text-align: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #eee;
-        }
-        .suggestion-header h1 {
-            color: #1e40af;
-            margin-bottom: 10px;
-            font-size: 28px;
-        }
-        .suggestion-header p {
-            color: #666;
-            font-size: 16px;
-        }
-        .game-logo {
-            width: 120px;
-            height: 120px;
-            margin: 0 auto 20px;
-            background-color: #3b82f6;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 40px;
-        }
-        .suggestion-intro {
-            margin-bottom: 30px;
-            line-height: 1.6;
-            color: #333;
-        }
-        .suggestion-intro p {
-            margin-bottom: 15px;
-        }
-        .suggestion-form {
-            margin-bottom: 30px;
-        }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: #333;
-            font-weight: 500;
-        }
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 12px 15px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 16px;
-        }
-        .form-group textarea {
-            min-height: 150px;
-            resize: vertical;
-        }
-        .submit-btn {
-            background-color: #1e40af;
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            border-radius: 6px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-        .submit-btn:hover {
-            background-color: #1e3a8a;
-        }
-        .disclaimer {
-            font-size: 14px;
-            color: #666;
-            text-align: center;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
-        }
-        /* 内容展示区域 */
-        .content-display {
-            margin: 30px 0;
-            display: none;
-        }
-        .content-display.active {
-            display: block;
-        }
-        .content-display img {
-            max-width: 100%;
-            border-radius: 6px;
-            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
-        }
-        .content-display .link-info {
-            padding: 20px;
-            background-color: #f8fafc;
-            border-radius: 6px;
-            margin-bottom: 20px;
-        }
-        .content-display .link-info p {
-            margin-bottom: 10px;
-            word-break: break-all;
-        }
-        .view-content-btn {
-            background-color: #2563eb;
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            border-radius: 6px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: background 0.3s;
-            margin-top: 20px;
-        }
-        .view-content-btn:hover {
-            background-color: #1d4ed8;
-        }
-        .meta-info {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
-            font-size: 14px;
-            color: #666;
-            display: none;
-        }
-        .meta-info.active {
-            display: block;
-        }
-        .meta-info p {
-            margin-bottom: 10px;
-        }
-        /* 提示框样式 */
-        .toast {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%) translateY(100px);
-            background: rgba(0,0,0,0.8);
-            color: white;
-            padding: 12px 20px;
-            border-radius: 6px;
-            font-size: 14px;
-            transition: transform 0.3s;
-            z-index: 100;
-        }
-        .toast.show {
-            transform: translateX(-50%) translateY(0);
-        }
-        /* 确认对话框 */
-        .confirm-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 1001;
-        }
-        .confirm-content {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            width: 90%;
-            max-width: 400px;
-            text-align: center;
-        }
-        .confirm-content h3 {
-            color: #333;
-            margin-bottom: 15px;
-            font-size: 18px;
-        }
-        .confirm-content p {
-            color: #666;
-            margin-bottom: 25px;
-            font-size: 16px;
-        }
-        .confirm-buttons {
-            display: flex;
-            gap: 15px;
-        }
-        .confirm-buttons button {
-            flex: 1;
-            padding: 10px 0;
-            border-radius: 6px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-        .cancel-btn {
-            background-color: #f1f5f9;
-            color: #333;
-            border: none;
-        }
-        .cancel-btn:hover {
-            background-color: #e2e8f0;
-        }
-        .confirm-btn {
-            background-color: #dc2626;
-            color: white;
-            border: none;
-        }
-        .confirm-btn:hover {
-            background-color: #b91c1c;
-        }
-        #imageInput {
-            display: none;
-        }
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(255, 255, 255, 0.8);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
-            display: none;
-        }
-        .loading-spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #3498db;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .loading-text {
-            color: #333;
-            font-size: 18px;
+    <title>临时链接生成工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#10B981',
+                        danger: '#EF4444',
+                        dark: '#1E293B',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-shadow {
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            }
+            .input-focus {
+                @apply focus:ring-2 focus:ring-primary/50 focus:border-primary focus:outline-none;
+            }
+            .drag-over {
+                @apply border-primary bg-primary/5;
+            }
         }
     </style>
 </head>
-<body>
-    <!-- 密码验证弹窗 -->
-    <div id="passwordModal" class="password-modal">
-        <div class="modal-content">
-            <h2>请输入访问密码</h2>
-            <div class="input-group">
-                <label for="accessPassword">密码</label>
-                <input type="password" id="accessPassword" placeholder="输入密码以使用工具">
-                <div class="error-hint" id="passwordError">密码错误，请重新输入</div>
-            </div>
-            <button id="verifyPassword">验证</button>
-        </div>
-    </div>
-
-    <!-- 确认删除对话框 -->
-    <div id="confirmModal" class="confirm-modal">
-        <div class="confirm-content">
-            <h3>确认删除</h3>
-            <p id="confirmMessage">您确定要执行此操作吗？</p>
-            <div class="confirm-buttons">
-                <button id="cancelDelete">取消</button>
-                <button id="confirmDelete">确认</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 加载动画 -->
-    <div class="loading-overlay" id="loadingOverlay">
-        <div class="loading-spinner"></div>
-        <div class="loading-text">正在加载建议收集表单...</div>
-    </div>
-
-    <!-- 生成器页面 -->
-    <div id="generatorPage" class="container" style="display: none;">
-        <header>
-            <h1>链接生成器</h1>
-            <p>生成伪装为玩家建议收集的限时链接</p>
-        </header>
-        
-        <div class="generator-box">
-            <!-- 内容类型选择器 -->
-            <div class="content-type-selector">
-                <div class="content-type-option active" data-type="link">
-                    <i class="fa fa-link"></i> 链接
+<body class="bg-gray-100 min-h-screen font-sans">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <!-- 密码验证界面 -->
+        <div id="passwordScreen" class="py-12">
+            <div class="bg-white rounded-xl p-8 card-shadow">
+                <div class="text-center mb-6">
+                    <i class="fa fa-link text-5xl text-primary mb-4"></i>
+                    <h1 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold text-dark">临时链接生成工具</h1>
+                    <p class="text-gray-500 mt-2">请输入访问密码</p>
                 </div>
-                <div class="content-type-option" data-type="image">
-                    <i class="fa fa-image"></i> 图片
-                </div>
-            </div>
-            
-            <!-- 链接输入区域 -->
-            <div class="input-group" id="linkInputGroup">
-                <label for="targetUrl">目标链接</label>
-                <input type="text" id="targetUrl" placeholder="请输入需要转发的目标链接">
-            </div>
-            
-            <!-- 图片上传区域 -->
-            <div class="image-upload-area" id="imageUploadArea">
-                <div class="image-upload-icon">
-                    <i class="fa fa-cloud-upload"></i>
-                </div>
-                <p class="image-upload-text">点击或拖拽图片到此处上传</p>
-                <p style="font-size: 12px; color: #94a3b8;">支持 JPG、PNG、GIF 格式，最大 5MB</p>
-                <input type="file" id="imageInput" accept="image/*">
                 
-                <div class="image-preview" id="imagePreview">
-                    <img id="previewImage" src="" alt="预览图">
-                </div>
-            </div>
-            
-            <div class="config-row">
-                <div class="config-item">
-                    <label for="expireMinutes">有效期（分钟）</label>
-                    <select id="expireMinutes">
-                        <option value="5">5分钟</option>
-                        <option value="10">10分钟</option>
-                        <option value="30" selected>30分钟</option>
-                        <option value="60">1小时</option>
-                        <option value="1440">24小时</option>
-                    </select>
-                </div>
-                <div class="config-item">
-                    <label for="maxViews">最大访问次数</label>
-                    <select id="maxViews">
-                        <option value="1">1次</option>
-                        <option value="3" selected>3次</option>
-                        <option value="5">5次</option>
-                        <option value="10">10次</option>
-                        <option value="20">20次</option>
-                    </select>
-                </div>
-            </div>
-            
-            <button id="generateBtn">生成新链接</button>
-            
-            <div id="resultArea" class="result-area">
-                <p>生成成功！伪装为玩家建议收集的链接如下：</p>
-                <div class="link-box">
-                    <input type="text" id="generatedLink" readonly>
-                    <button id="copyBtn">复制</button>
-                </div>
-                <div class="btn-group">
-                    <button id="testBtn">测试链接</button>
-                </div>
-            </div>
-        </div>
-        
-        <div class="history-box">
-            <div class="history-header">
-                <h2>生成历史</h2>
-                <button id="clearAllHistory">
-                    <i class="fa fa-trash"></i> 清空历史
-                </button>
-            </div>
-            <div id="historyList" class="history-list">
-                <div class="empty-hint">暂无生成记录</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 伪装的玩家建议收集页面 -->
-    <div id="suggestionPage" class="suggestion-container" style="display: none;">
-        <div class="suggestion-header">
-            <div class="game-logo">
-                <i class="fa fa-gamepad"></i>
-            </div>
-            <h1>玩家建议与反馈收集</h1>
-            <p>感谢您参与游戏改进，您的建议对我们至关重要</p>
-        </div>
-        
-        <div class="suggestion-intro">
-            <p>尊敬的玩家，为了给您带来更好的游戏体验，我们诚挚邀请您参与本次建议收集活动。您的每一条反馈都将被认真对待，帮助我们不断优化游戏内容和功能。</p>
-            <p>请填写下方表单，分享您对游戏的建议、bug报告或其他想法。我们会定期查看并筛选有价值的建议进行采纳和改进。</p>
-        </div>
-        
-        <div class="suggestion-form" id="suggestionForm">
-            <div class="form-group">
-                <label for="playerName">您的游戏昵称</label>
-                <input type="text" id="playerName" placeholder="请输入您的游戏昵称">
-            </div>
-            
-            <div class="form-group">
-                <label for="suggestionType">建议类型</label>
-                <select id="suggestionType">
-                    <option value="feature">功能建议</option>
-                    <option value="bug">bug报告</option>
-                    <option value="balance">平衡性建议</option>
-                    <option value="other">其他建议</option>
-                </select>
-            </div>
-            
-            <div class="form-group">
-                <label for="suggestionContent">建议内容</label>
-                <textarea id="suggestionContent" placeholder="请详细描述您的建议或反馈..."></textarea>
-            </div>
-            
-            <button class="submit-btn" id="submitSuggestion">提交建议</button>
-        </div>
-        
-        <!-- 实际内容展示区域 -->
-        <div class="content-display" id="contentDisplay">
-            <!-- 链接类型内容 -->
-            <div class="link-content" id="linkContent" style="display: none;">
-                <div class="link-info">
-                    <p><strong>相关游戏资源链接：</strong></p>
-                    <p id="displayedLink"></p>
-                </div>
-                <button class="view-content-btn" id="openLinkBtn">访问该链接</button>
-            </div>
-            
-            <!-- 图片类型内容 -->
-            <div class="image-content" id="imageContent" style="display: none;">
-                <p><strong>游戏相关图片资源：</strong></p>
-                <img id="displayedImage" src="" alt="游戏相关图片">
-                <button class="view-content-btn" id="openImageBtn">查看原图</button>
-            </div>
-        </div>
-        
-        <div class="meta-info" id="metaInfo">
-            <p id="remainingViews">剩余查看次数：2次</p>
-            <p id="remainingTime">有效时间：约29分钟</p>
-        </div>
-        
-        <div class="disclaimer">
-            <p>© 2023 游戏开发团队 版权所有 | 本表单仅用于收集玩家建议</p>
-        </div>
-    </div>
-
-    <!-- 提示框 -->
-    <div id="toast" class="toast">操作成功</div>
-
-    <script src="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css"></script>
-    <script>
-        // 配置常量
-        const CONFIG = {
-            // 工具访问密码
-            toolPassword: "007",
-            // 默认有效期和访问次数
-            defaultExpireMinutes: 10,
-            defaultMaxViews: 3,
-            // 图片上传限制
-            maxImageSize: 5 * 1024 * 1024, // 5MB
-            allowedImageTypes: ['image/jpeg', 'image/png', 'image/gif'],
-            // 伪装页面相关配置
-            loadingDelay: 2000, // 加载动画延迟时间(ms)
-            formSubmitDelay: 1500 // 表单提交延迟时间(ms)
-        };
-
-        // 当前选中的内容类型
-        let currentContentType = 'link';
-        let uploadedImageData = null;
-
-        // DOM元素
-        const elements = {
-            // 密码验证相关
-            passwordModal: document.getElementById('passwordModal'),
-            accessPassword: document.getElementById('accessPassword'),
-            passwordError: document.getElementById('passwordError'),
-            verifyPassword: document.getElementById('verifyPassword'),
-            
-            // 确认删除相关
-            confirmModal: document.getElementById('confirmModal'),
-            confirmMessage: document.getElementById('confirmMessage'),
-            cancelDelete: document.getElementById('cancelDelete'),
-            confirmDelete: document.getElementById('confirmDelete'),
-            
-            // 加载动画
-            loadingOverlay: document.getElementById('loadingOverlay'),
-            
-            // 生成器页面相关
-            generatorPage: document.getElementById('generatorPage'),
-            contentTypeOptions: document.querySelectorAll('.content-type-option'),
-            linkInputGroup: document.getElementById('linkInputGroup'),
-            targetUrl: document.getElementById('targetUrl'),
-            imageUploadArea: document.getElementById('imageUploadArea'),
-            imageInput: document.getElementById('imageInput'),
-            imagePreview: document.getElementById('imagePreview'),
-            previewImage: document.getElementById('previewImage'),
-            expireMinutes: document.getElementById('expireMinutes'),
-            maxViews: document.getElementById('maxViews'),
-            generateBtn: document.getElementById('generateBtn'),
-            resultArea: document.getElementById('resultArea'),
-            generatedLink: document.getElementById('generatedLink'),
-            copyBtn: document.getElementById('copyBtn'),
-            testBtn: document.getElementById('testBtn'),
-            historyList: document.getElementById('historyList'),
-            clearAllHistory: document.getElementById('clearAllHistory'),
-            
-            // 玩家建议收集页面相关
-            suggestionPage: document.getElementById('suggestionPage'),
-            suggestionForm: document.getElementById('suggestionForm'),
-            playerName: document.getElementById('playerName'),
-            suggestionType: document.getElementById('suggestionType'),
-            suggestionContent: document.getElementById('suggestionContent'),
-            submitSuggestion: document.getElementById('submitSuggestion'),
-            contentDisplay: document.getElementById('contentDisplay'),
-            linkContent: document.getElementById('linkContent'),
-            displayedLink: document.getElementById('displayedLink'),
-            openLinkBtn: document.getElementById('openLinkBtn'),
-            imageContent: document.getElementById('imageContent'),
-            displayedImage: document.getElementById('displayedImage'),
-            openImageBtn: document.getElementById('openImageBtn'),
-            metaInfo: document.getElementById('metaInfo'),
-            remainingViews: document.getElementById('remainingViews'),
-            remainingTime: document.getElementById('remainingTime'),
-            
-            // 提示框
-            toast: document.getElementById('toast')
-        };
-
-        // 存储键名
-        const STORAGE_KEYS = {
-            linkDataPrefix: 'linkData_',
-            history: 'linkGeneratorHistory',
-            isAuthenticated: 'linkGeneratorAuthenticated'
-        };
-
-        // 用于记录待删除的历史项ID
-        let pendingDeleteId = null;
-        // 用于记录当前访问的链接数据
-        let currentLinkData = null;
-
-        // 初始化
-        function init() {
-            // 检查是否已验证
-            const isAuthenticated = localStorage.getItem(STORAGE_KEYS.isAuthenticated) === 'true';
-            
-            // 检查URL参数，判断是生成页面还是访问页面
-            const urlParams = new URLSearchParams(window.location.search);
-            const linkId = urlParams.get('id');
-            
-            if (linkId) {
-                // 访问链接页面，显示伪装的玩家建议收集页面
-                elements.passwordModal.style.display = 'none';
-                elements.generatorPage.style.display = 'none';
-                showLoadingOverlay();
-                // 延迟显示，增加真实感
-                setTimeout(() => {
-                    hideLoadingOverlay();
-                    elements.suggestionPage.style.display = 'block';
-                    handleAccessLink(linkId);
-                }, CONFIG.loadingDelay);
-            } else {
-                // 生成器页面，需要密码验证
-                if (isAuthenticated) {
-                    elements.passwordModal.style.display = 'none';
-                    elements.generatorPage.style.display = 'block';
-                    loadHistory();
-                    bindGeneratorEvents();
-                    bindDeleteEvents();
-                    bindContentTypeEvents();
-                    bindImageUploadEvents();
-                } else {
-                    elements.passwordModal.style.display = 'flex';
-                    bindPasswordEvents();
-                }
-            }
-        }
-
-        // 显示加载动画
-        function showLoadingOverlay() {
-            elements.loadingOverlay.style.display = 'flex';
-        }
-
-        // 隐藏加载动画
-        function hideLoadingOverlay() {
-            elements.loadingOverlay.style.display = 'none';
-        }
-
-        // 绑定密码验证事件
-        function bindPasswordEvents() {
-            elements.verifyPassword.addEventListener('click', verifyPassword);
-            elements.accessPassword.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') verifyPassword();
-            });
-        }
-
-        // 验证密码
-        function verifyPassword() {
-            const password = elements.accessPassword.value.trim();
-            
-            if (password === CONFIG.toolPassword) {
-                elements.passwordError.style.display = 'none';
-                localStorage.setItem(STORAGE_KEYS.isAuthenticated, 'true');
-                elements.passwordModal.style.display = 'none';
-                elements.generatorPage.style.display = 'block';
-                loadHistory();
-                bindGeneratorEvents();
-                bindDeleteEvents();
-                bindContentTypeEvents();
-                bindImageUploadEvents();
-            } else {
-                elements.passwordError.style.display = 'block';
-                elements.accessPassword.classList.add('border-red-500');
-                
-                setTimeout(() => {
-                    elements.accessPassword.classList.remove('border-red-500');
-                }, 1000);
-            }
-        }
-
-        // 绑定内容类型选择事件
-        function bindContentTypeEvents() {
-            elements.contentTypeOptions.forEach(option => {
-                option.addEventListener('click', () => {
-                    // 移除所有选项的active类
-                    elements.contentTypeOptions.forEach(opt => opt.classList.remove('active'));
-                    // 给当前点击的选项添加active类
-                    option.classList.add('active');
+                <div class="max-w-md mx-auto">
+                    <div class="mb-4">
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-1">密码</label>
+                        <div class="relative">
+                            <input type="password" id="password" 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus transition-all"
+                                placeholder="请输入密码">
+                            <button id="togglePassword" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                <i class="fa fa-eye-slash"></i>
+                            </button>
+                        </div>
+                    </div>
                     
-                    // 更新当前内容类型
-                    currentContentType = option.getAttribute('data-type');
+                    <button id="submitPassword" class="w-full bg-primary hover:bg-primary/90 text-white font-medium py-2 px-4 rounded-lg transition-all flex items-center justify-center gap-2">
+                        <i class="fa fa-unlock-alt"></i>
+                        <span>验证密码</span>
+                    </button>
                     
-                    // 显示对应的输入区域
-                    if (currentContentType === 'link') {
-                        elements.linkInputGroup.style.display = 'block';
-                        elements.imageUploadArea.classList.remove('active');
-                        uploadedImageData = null;
-                        elements.imagePreview.style.display = 'none';
-                    } else if (currentContentType === 'image') {
-                        elements.linkInputGroup.style.display = 'none';
-                        elements.imageUploadArea.classList.add('active');
-                    }
-                });
-            });
-        }
+                    <p id="passwordError" class="text-danger text-sm mt-3 text-center hidden">密码错误，请重试</p>
+                </div>
+            </div>
+        </div>
 
-        // 绑定图片上传事件
-        function bindImageUploadEvents() {
-            // 点击上传区域触发文件选择
-            elements.imageUploadArea.addEventListener('click', () => {
-                elements.imageInput.click();
-            });
-            
-            // 阻止上传区域的点击事件冒泡
-            elements.imagePreview.addEventListener('click', (e) => {
-                e.stopPropagation();
-            });
-            
-            // 处理文件选择
-            elements.imageInput.addEventListener('change', handleImageSelect);
-            
-            // 处理拖拽上传
-            elements.imageUploadArea.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                elements.imageUploadArea.style.borderColor = '#2563eb';
-            });
-            
-            elements.imageUploadArea.addEventListener('dragleave', () => {
-                elements.imageUploadArea.style.borderColor = '#ddd';
-            });
-            
-            elements.imageUploadArea.addEventListener('drop', (e) => {
-                e.preventDefault();
-                elements.imageUploadArea.style.borderColor = '#ddd';
-                
-                if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                    handleImageFile(e.dataTransfer.files[0]);
-                }
-            });
-        }
+        <!-- 主工具界面 -->
+        <div id="mainTool" class="hidden">
+            <header class="mb-8">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h1 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold text-dark">临时链接生成工具</h1>
+                        <p class="text-gray-500">创建有时效和访问限制的自定义链接</p>
+                    </div>
+                    <button id="logoutBtn" class="text-gray-500 hover:text-danger transition-colors flex items-center gap-1">
+                        <i class="fa fa-sign-out"></i>
+                        <span>退出</span>
+                    </button>
+                </div>
+            </header>
 
-        // 处理图片选择
-        function handleImageSelect(e) {
-            if (e.target.files && e.target.files[0]) {
-                handleImageFile(e.target.files[0]);
-            }
-        }
-
-        // 处理图片文件
-        function handleImageFile(file) {
-            // 验证文件类型
-            if (!CONFIG.allowedImageTypes.includes(file.type)) {
-                showToast('请上传JPG、PNG或GIF格式的图片');
-                return;
-            }
-            
-            // 验证文件大小
-            if (file.size > CONFIG.maxImageSize) {
-                showToast('图片大小不能超过5MB');
-                return;
-            }
-            
-            // 读取图片并显示预览
-            const reader = new FileReader();
-            
-            reader.onload = (e) => {
-                uploadedImageData = e.target.result;
-                elements.previewImage.src = uploadedImageData;
-                elements.imagePreview.style.display = 'block';
-                showToast('图片上传成功');
-            };
-            
-            reader.readAsDataURL(file);
-        }
-
-        // 绑定生成器事件
-        function bindGeneratorEvents() {
-            // 生成链接按钮
-            elements.generateBtn.addEventListener('click', generateLink);
-            
-            // 复制链接按钮
-            elements.copyBtn.addEventListener('click', copyToClipboard);
-            
-            // 测试链接按钮
-            elements.testBtn.addEventListener('click', () => {
-                const link = elements.generatedLink.value;
-                if (link) window.open(link, '_blank');
-            });
-        }
-
-        // 绑定删除相关事件
-        function bindDeleteEvents() {
-            // 清空所有历史按钮
-            elements.clearAllHistory.addEventListener('click', () => {
-                const history = JSON.parse(localStorage.getItem(STORAGE_KEYS.history) || '[]');
-                if (history.length === 0) {
-                    showToast('没有可删除的历史记录');
-                    return;
-                }
+            <!-- 链接生成表单 -->
+            <div class="bg-white rounded-xl p-6 md:p-8 card-shadow mb-8">
+                <h2 class="text-xl font-semibold mb-6 flex items-center gap-2">
+                    <i class="fa fa-plus-circle text-primary"></i>
+                    生成新链接
+                </h2>
                 
-                pendingDeleteId = 'all';
-                elements.confirmMessage.textContent = '您确定要清空所有历史记录吗？此操作不可恢复。';
-                elements.confirmModal.style.display = 'flex';
-            });
-            
-            // 取消删除
-            elements.cancelDelete.addEventListener('click', () => {
-                elements.confirmModal.style.display = 'none';
-                pendingDeleteId = null;
-            });
-            
-            // 确认删除
-            elements.confirmDelete.addEventListener('click', () => {
-                if (pendingDeleteId === 'all') {
-                    // 清空所有历史
-                    clearAllHistory();
-                } else if (pendingDeleteId) {
-                    // 删除单个历史
-                    deleteHistoryItem(pendingDeleteId);
-                }
-                
-                elements.confirmModal.style.display = 'none';
-                pendingDeleteId = null;
-            });
-            
-            // 点击模态框外部关闭
-            elements.confirmModal.addEventListener('click', (e) => {
-                if (e.target === elements.confirmModal) {
-                    elements.confirmModal.style.display = 'none';
-                    pendingDeleteId = null;
-                }
-            });
-        }
-
-        // 生成链接
-        function generateLink() {
-            // 验证内容
-            let contentData = null;
-            let contentPreview = '';
-            
-            if (currentContentType === 'link') {
-                // 验证目标链接
-                const targetUrl = elements.targetUrl.value.trim();
-                if (!targetUrl) {
-                    showToast('请输入目标链接');
-                    return;
-                }
-                
-                // 验证URL格式
-                try {
-                    new URL(targetUrl);
-                    contentData = targetUrl;
-                    contentPreview = targetUrl;
-                } catch (e) {
-                    showToast('请输入有效的URL（包含http://或https://）');
-                    return;
-                }
-            } else if (currentContentType === 'image') {
-                // 验证图片
-                if (!uploadedImageData) {
-                    showToast('请先上传图片');
-                    return;
-                }
-                contentData = uploadedImageData;
-                contentPreview = '图片内容';
-            }
-            
-            // 获取配置
-            const expireMinutes = parseInt(elements.expireMinutes.value);
-            const maxViews = parseInt(elements.maxViews.value);
-            
-            // 生成唯一ID
-            const linkId = 'link_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
-            
-            // 计算过期时间
-            const createTime = new Date().getTime();
-            const expireTime = createTime + (expireMinutes * 60 * 1000);
-            
-            // 构建链接数据
-            const linkData = {
-                id: linkId,
-                contentType: currentContentType,
-                contentData: contentData,
-                createTime: createTime,
-                expireTime: expireTime,
-                maxViews: maxViews,
-                currentViews: 0,
-                expireMinutes: expireMinutes
-            };
-            
-            // 保存链接数据
-            localStorage.setItem(STORAGE_KEYS.linkDataPrefix + linkId, JSON.stringify(linkData));
-            
-            // 构建生成的链接 - 伪装成玩家建议收集页面
-            const currentUrl = window.location.href.split('?')[0];
-            const generatedLink = currentUrl + '?id=' + linkId;
-            
-            // 更新UI
-            elements.generatedLink.value = generatedLink;
-            elements.resultArea.classList.add('active');
-            
-            // 添加到历史记录
-            addToHistory(linkData, generatedLink, contentPreview);
-            
-            showToast('伪装链接生成成功');
-        }
-
-        // 添加到历史记录
-        function addToHistory(linkData, generatedLink, contentPreview) {
-            let history = JSON.parse(localStorage.getItem(STORAGE_KEYS.history) || '[]');
-            
-            const historyItem = {
-                id: linkData.id,
-                contentType: linkData.contentType,
-                generatedLink: generatedLink,
-                contentPreview: contentPreview,
-                createTime: linkData.createTime,
-                expireTime: linkData.expireTime,
-                maxViews: linkData.maxViews,
-                expireMinutes: linkData.expireMinutes
-            };
-            
-            // 添加到历史记录开头
-            history.unshift(historyItem);
-            
-            // 限制历史记录数量
-            if (history.length > 20) {
-                history = history.slice(0, 20);
-            }
-            
-            // 保存历史记录
-            localStorage.setItem(STORAGE_KEYS.history, JSON.stringify(history));
-            
-            // 更新历史记录UI
-            loadHistory();
-        }
-
-        // 加载历史记录
-        function loadHistory() {
-            const history = JSON.parse(localStorage.getItem(STORAGE_KEYS.history) || '[]');
-            
-            if (history.length === 0) {
-                elements.historyList.innerHTML = '<div class="empty-hint">暂无生成记录</div>';
-                return;
-            }
-            
-            let html = '';
-            const now = new Date().getTime();
-            
-            history.forEach(item => {
-                // 获取最新的访问次数
-                const linkDataStr = localStorage.getItem(STORAGE_KEYS.linkDataPrefix + item.id);
-                let currentViews = 0;
-                
-                if (linkDataStr) {
-                    const linkData = JSON.parse(linkDataStr);
-                    currentViews = linkData.currentViews;
-                }
-                
-                // 判断是否过期
-                const isExpired = now > item.expireTime || currentViews >= item.maxViews;
-                const statusClass = isExpired ? 'status expired' : 'status active';
-                const statusText = isExpired ? '已失效' : '生效中';
-                
-                // 内容类型标签
-                const contentTypeLabel = item.contentType === 'link' 
-                    ? '<span class="content-type"><i class="fa fa-link"></i> 链接</span>'
-                    : '<span class="content-type"><i class="fa fa-image"></i> 图片</span>';
-                
-                // 格式化时间
-                const createDate = new Date(item.createTime);
-                const timeStr = `${createDate.getHours().toString().padStart(2, '0')}:${createDate.getMinutes().toString().padStart(2, '0')}`;
-                
-                html += `
-                    <div class="history-item">
-                        <div class="info">
-                            ${contentTypeLabel}
-                            <div class="url">${item.contentPreview}</div>
-                            <div class="meta">
-                                生成时间: ${timeStr} | 有效期: ${item.expireMinutes}分钟 | 访问次数: ${currentViews}/${item.maxViews}
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="contentType" class="block text-sm font-medium text-gray-700 mb-1">内容类型</label>
+                        <select id="contentType" class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus transition-all">
+                            <option value="url">网址</option>
+                            <option value="image">图片</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="contentValueContainer" class="block text-sm font-medium text-gray-700 mb-1">
+                            内容值
+                            <span id="contentPlaceholder" class="text-gray-400 text-xs">(例如: https://example.com)</span>
+                        </label>
+                        
+                        <!-- 内容输入容器 -->
+                        <div id="contentValueContainer">
+                            <input type="text" id="contentValue" 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus transition-all"
+                                placeholder="输入网址或图片URL">
+                            
+                            <!-- 图片拖放区域 -->
+                            <div id="imageDropArea" class="mt-3 border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hidden">
+                                <i class="fa fa-cloud-upload text-4xl text-gray-400 mb-2"></i>
+                                <p class="text-gray-500 mb-1">将图片拖到此处，或</p>
+                                <label class="text-primary hover:text-primary/80 cursor-pointer font-medium">
+                                    <span>浏览文件</span>
+                                    <input type="file" id="imageUpload" accept="image/*" class="hidden">
+                                </label>
+                                <p id="dropImageName" class="mt-2 text-sm text-gray-600 hidden"></p>
                             </div>
                         </div>
-                        <div class="actions">
-                            <div class="${statusClass}">${statusText}</div>
-                            <button class="delete-btn" data-id="${item.id}">
-                                <i class="fa fa-trash-o"></i>
+                    </div>
+                    
+                    <div>
+                        <label for="expiryTime" class="block text-sm font-medium text-gray-700 mb-1">有效时间 (分钟)</label>
+                        <input type="number" id="expiryTime" value="5" min="1" max="60"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus transition-all">
+                    </div>
+                    
+                    <div>
+                        <label for="maxViews" class="block text-sm font-medium text-gray-700 mb-1">最大访问次数</label>
+                        <input type="number" id="maxViews" value="3" min="1" max="10"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus transition-all">
+                    </div>
+                </div>
+                
+                <div class="mt-6">
+                    <button id="generateBtn" class="bg-primary hover:bg-primary/90 text-white font-medium py-2 px-6 rounded-lg transition-all flex items-center gap-2">
+                        <i class="fa fa-magic"></i>
+                        <span>生成链接</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 生成的链接列表 -->
+            <div class="bg-white rounded-xl p-6 md:p-8 card-shadow">
+                <h2 class="text-xl font-semibold mb-6 flex items-center gap-2">
+                    <i class="fa fa-list-alt text-primary"></i>
+                    已生成的链接
+                </h2>
+                
+                <div id="linksList" class="space-y-4">
+                    <div class="text-center text-gray-500 py-8 border border-dashed border-gray-200 rounded-lg">
+                        <i class="fa fa-link text-3xl mb-2 opacity-30"></i>
+                        <p>暂无生成的链接</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 链接查看页面 -->
+        <div id="linkView" class="hidden py-12">
+            <div id="activeContent" class="bg-white rounded-xl p-6 md:p-8 card-shadow hidden">
+                <div class="flex justify-between items-start mb-4">
+                    <h2 class="text-lg font-medium text-gray-700">链接内容</h2>
+                    <div class="text-xs text-gray-500 flex items-center gap-1">
+                        <i class="fa fa-eye"></i>
+                        <span id="viewCount">已查看: 1/3 次</span>
+                    </div>
+                </div>
+                
+                <div id="urlContent" class="hidden">
+                    <iframe id="contentFrame" class="w-full h-[500px] border border-gray-200 rounded-lg" sandbox="allow-same-origin allow-scripts"></iframe>
+                </div>
+                
+                <div id="imageContent" class="hidden flex justify-center items-center">
+                    <img id="contentImage" class="max-w-full max-h-[500px] rounded-lg shadow-md" alt="链接内容图片">
+                </div>
+            </div>
+            
+            <div id="expiredContent" class="bg-white rounded-xl p-8 card-shadow text-center">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+                    <i class="fa fa-link text-2xl text-gray-400"></i>
+                </div>
+                <h2 class="text-xl font-semibold mb-2">链接已失效</h2>
+                <p class="text-gray-500 mb-6">感谢您的游戏建议，链接已失效</p>
+                <a href="./" class="inline-flex items-center gap-1 text-primary hover:underline">
+                    <i class="fa fa-home"></i>
+                    <span>返回首页</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 生成成功提示 -->
+    <div id="successToast" class="fixed bottom-6 right-6 bg-secondary text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-2">
+        <i class="fa fa-check-circle"></i>
+        <span>链接生成成功！</span>
+    </div>
+
+    <script>
+        // 全局变量
+        const PASSWORD = '007';
+        let currentLinks = [];
+        let droppedImageDataUrl = null;
+        
+        // DOM元素
+        const passwordScreen = document.getElementById('passwordScreen');
+        const mainTool = document.getElementById('mainTool');
+        const linkView = document.getElementById('linkView');
+        const passwordInput = document.getElementById('password');
+        const togglePassword = document.getElementById('togglePassword');
+        const submitPassword = document.getElementById('submitPassword');
+        const passwordError = document.getElementById('passwordError');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const contentType = document.getElementById('contentType');
+        const contentValue = document.getElementById('contentValue');
+        const contentPlaceholder = document.getElementById('contentPlaceholder');
+        const expiryTime = document.getElementById('expiryTime');
+        const maxViews = document.getElementById('maxViews');
+        const generateBtn = document.getElementById('generateBtn');
+        const linksList = document.getElementById('linksList');
+        const successToast = document.getElementById('successToast');
+        const activeContent = document.getElementById('activeContent');
+        const expiredContent = document.getElementById('expiredContent');
+        const urlContent = document.getElementById('urlContent');
+        const imageContent = document.getElementById('imageContent');
+        const contentFrame = document.getElementById('contentFrame');
+        const contentImage = document.getElementById('contentImage');
+        const viewCount = document.getElementById('viewCount');
+        const imageDropArea = document.getElementById('imageDropArea');
+        const imageUpload = document.getElementById('imageUpload');
+        const dropImageName = document.getElementById('dropImageName');
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            // 检查是否已登录
+            if (localStorage.getItem('authenticated') === 'true') {
+                showMainTool();
+                loadLinks();
+            }
+            
+            // 检查是否访问特定链接
+            const urlParams = new URLSearchParams(window.location.search);
+            const linkId = urlParams.get('id');
+            if (linkId) {
+                showLinkContent(linkId);
+                return;
+            }
+            
+            // 事件监听
+            setupEventListeners();
+        });
+        
+        // 设置事件监听
+        function setupEventListeners() {
+            // 密码相关
+            togglePassword.addEventListener('click', togglePasswordVisibility);
+            submitPassword.addEventListener('click', verifyPassword);
+            passwordInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') verifyPassword();
+            });
+            
+            // 登出
+            logoutBtn.addEventListener('click', logout);
+            
+            // 内容类型切换
+            contentType.addEventListener('change', updateContentPlaceholder);
+            
+            // 生成链接
+            generateBtn.addEventListener('click', generateLink);
+            
+            // 图片上传相关事件
+            setupImageUploadEvents();
+        }
+        
+        // 设置图片上传事件监听
+        function setupImageUploadEvents() {
+            // 拖放事件
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                imageDropArea.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                imageDropArea.addEventListener(eventName, highlight, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                imageDropArea.addEventListener(eventName, unhighlight, false);
+            });
+            
+            function highlight() {
+                imageDropArea.classList.add('drag-over');
+            }
+            
+            function unhighlight() {
+                imageDropArea.classList.remove('drag-over');
+            }
+            
+            // 处理文件拖放
+            imageDropArea.addEventListener('drop', handleDrop, false);
+            
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                
+                if (files.length) {
+                    handleImageFiles(files);
+                }
+            }
+            
+            // 处理文件选择
+            imageUpload.addEventListener('change', function() {
+                if (this.files.length) {
+                    handleImageFiles(this.files);
+                }
+            });
+            
+            // 点击上传区域触发文件选择
+            imageDropArea.addEventListener('click', function(e) {
+                if (!e.target.closest('label')) {
+                    imageUpload.click();
+                }
+            });
+        }
+        
+        // 处理图片文件
+        function handleImageFiles(files) {
+            const file = files[0];
+            
+            // 检查是否为图片文件
+            if (!file.type.match('image.*')) {
+                alert('请选择图片文件');
+                return;
+            }
+            
+            // 显示文件名
+            dropImageName.textContent = `已选择: ${file.name}`;
+            dropImageName.classList.remove('hidden');
+            
+            // 读取图片并转换为dataURL
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                droppedImageDataUrl = e.target.result;
+                contentValue.value = ''; // 清空URL输入
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // 切换密码可见性
+        function togglePasswordVisibility() {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            
+            // 切换图标
+            const icon = togglePassword.querySelector('i');
+            if (type === 'password') {
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+        
+        // 验证密码
+        function verifyPassword() {
+            if (passwordInput.value === PASSWORD) {
+                localStorage.setItem('authenticated', 'true');
+                showMainTool();
+                loadLinks();
+            } else {
+                passwordError.classList.remove('hidden');
+                passwordInput.classList.add('border-danger');
+                setTimeout(() => {
+                    passwordInput.classList.remove('border-danger');
+                }, 2000);
+            }
+        }
+        
+        // 登出
+        function logout() {
+            localStorage.removeItem('authenticated');
+            passwordInput.value = '';
+            passwordError.classList.add('hidden');
+            showPasswordScreen();
+        }
+        
+        // 更新内容占位符和显示区域
+        function updateContentPlaceholder() {
+            if (contentType.value === 'url') {
+                contentPlaceholder.textContent = '(例如: https://example.com)';
+                contentValue.placeholder = '输入网址';
+                imageDropArea.classList.add('hidden');
+                // 重置图片拖放状态
+                droppedImageDataUrl = null;
+                dropImageName.classList.add('hidden');
+                dropImageName.textContent = '';
+            } else {
+                contentPlaceholder.textContent = '(例如: https://example.com/image.jpg 或拖入图片)';
+                contentValue.placeholder = '输入图片URL或拖放图片';
+                imageDropArea.classList.remove('hidden');
+            }
+        }
+        
+        // 生成链接
+        function generateLink() {
+            let contentValueData = '';
+            
+            // 根据内容类型获取值
+            if (contentType.value === 'url') {
+                contentValueData = contentValue.value.trim();
+                if (!contentValueData) {
+                    alert('请输入网址');
+                    return;
+                }
+                
+                // 简单验证URL格式
+                try {
+                    new URL(contentValueData);
+                } catch (e) {
+                    alert('请输入有效的网址');
+                    return;
+                }
+            } else {
+                // 图片类型 - 优先使用拖放的图片
+                if (droppedImageDataUrl) {
+                    contentValueData = droppedImageDataUrl;
+                } else {
+                    contentValueData = contentValue.value.trim();
+                    if (!contentValueData) {
+                        alert('请输入图片URL或拖入图片');
+                        return;
+                    }
+                    
+                    // 简单验证URL格式
+                    try {
+                        new URL(contentValueData);
+                    } catch (e) {
+                        alert('请输入有效的图片URL');
+                        return;
+                    }
+                }
+            }
+            
+            // 创建链接对象
+            const link = {
+                id: generateRandomId(),
+                type: contentType.value,
+                value: contentValueData,
+                expiryTime: Date.now() + (parseInt(expiryTime.value) * 60 * 1000),
+                maxViews: parseInt(maxViews.value),
+                currentViews: 0,
+                createdAt: new Date().toISOString()
+            };
+            
+            // 保存链接
+            currentLinks.push(link);
+            saveLinks();
+            renderLinksList();
+            
+            // 清空输入
+            contentValue.value = '';
+            // 重置图片拖放状态
+            if (contentType.value === 'image') {
+                droppedImageDataUrl = null;
+                dropImageName.classList.add('hidden');
+                dropImageName.textContent = '';
+            }
+            
+            // 显示成功提示
+            showToast();
+        }
+        
+        // 生成随机ID
+        function generateRandomId(length = 8) {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let result = '';
+            for (let i = 0; i < length; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
+        
+        // 保存链接到本地存储
+        function saveLinks() {
+            localStorage.setItem('generatedLinks', JSON.stringify(currentLinks));
+        }
+        
+        // 从本地存储加载链接
+        function loadLinks() {
+            const saved = localStorage.getItem('generatedLinks');
+            currentLinks = saved ? JSON.parse(saved) : [];
+            renderLinksList();
+        }
+        
+        // 渲染链接列表
+        function renderLinksList() {
+            if (currentLinks.length === 0) {
+                linksList.innerHTML = `
+                    <div class="text-center text-gray-500 py-8 border border-dashed border-gray-200 rounded-lg">
+                        <i class="fa fa-link text-3xl mb-2 opacity-30"></i>
+                        <p>暂无生成的链接</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // 过滤掉已过期的链接
+            currentLinks = currentLinks.filter(link => isLinkActive(link));
+            saveLinks();
+            
+            if (currentLinks.length === 0) {
+                renderLinksList();
+                return;
+            }
+            
+            // 按创建时间排序（最新的在前）
+            currentLinks.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            
+            linksList.innerHTML = currentLinks.map(link => {
+                const url = `${window.location.origin}${window.location.pathname}?id=${link.id}`;
+                const timeLeft = Math.ceil((link.expiryTime - Date.now()) / (60 * 1000));
+                const typeIcon = link.type === 'url' ? 'fa-globe' : 'fa-image';
+                
+                return `
+                    <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex items-center gap-2">
+                                <i class="fa ${typeIcon} text-primary"></i>
+                                <span class="font-medium">${link.type === 'url' ? '网址链接' : '图片链接'}</span>
+                            </div>
+                            <div class="text-xs text-gray-500">
+                                剩余: ${timeLeft} 分钟 | ${link.currentViews}/${link.maxViews} 次
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3 break-all text-sm text-gray-600">
+                            ${link.type === 'image' && link.value.startsWith('data:image/') ? 
+                                '拖入的图片' : link.value}
+                        </div>
+                        
+                        <div class="flex flex-wrap gap-2 items-center">
+                            <div class="relative flex-grow min-w-[200px]">
+                                <input type="text" value="${url}" readonly 
+                                    class="w-full px-3 py-1.5 text-sm border border-gray-300 rounded bg-gray-50 focus:ring-1 focus:ring-primary focus:border-primary">
+                                <button onclick="copyToClipboard('${url}', this)" 
+                                    class="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500 hover:text-primary text-xs px-2 py-0.5">
+                                    复制
+                                </button>
+                            </div>
+                            
+                            <a href="${url}" target="_blank" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded transition-colors">
+                                预览
+                            </a>
+                            
+                            <button onclick="deleteLink('${link.id}')" class="text-xs text-gray-500 hover:text-danger px-3 py-1.5 rounded transition-colors">
+                                删除
                             </button>
                         </div>
                     </div>
                 `;
-            });
-            
-            elements.historyList.innerHTML = html;
-            
-            // 为每个删除按钮绑定事件
-            document.querySelectorAll('.delete-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const id = e.currentTarget.getAttribute('data-id');
-                    pendingDeleteId = id;
-                    elements.confirmMessage.textContent = '您确定要删除这条记录吗？';
-                    elements.confirmModal.style.display = 'flex';
-                });
-            });
+            }).join('');
         }
-
-        // 删除单个历史记录
-        function deleteHistoryItem(id) {
-            // 从历史记录中移除
-            let history = JSON.parse(localStorage.getItem(STORAGE_KEYS.history) || '[]');
-            history = history.filter(item => item.id !== id);
-            localStorage.setItem(STORAGE_KEYS.history, JSON.stringify(history));
+        
+        // 显示链接内容
+        function showLinkContent(linkId) {
+            const link = currentLinks.find(l => l.id === linkId);
             
-            // 删除对应的链接数据
-            localStorage.removeItem(STORAGE_KEYS.linkDataPrefix + id);
-            
-            // 更新UI
-            loadHistory();
-            showToast('记录已删除');
-        }
-
-        // 清空所有历史记录
-        function clearAllHistory() {
-            // 获取所有历史记录
-            const history = JSON.parse(localStorage.getItem(STORAGE_KEYS.history) || '[]');
-            
-            // 删除所有链接数据
-            history.forEach(item => {
-                localStorage.removeItem(STORAGE_KEYS.linkDataPrefix + item.id);
-            });
-            
-            // 清空历史记录
-            localStorage.removeItem(STORAGE_KEYS.history);
-            
-            // 更新UI
-            loadHistory();
-            showToast('所有历史记录已清空');
-        }
-
-        // 处理链接访问
-        function handleAccessLink(linkId) {
-            // 获取链接数据
-            const linkDataStr = localStorage.getItem(STORAGE_KEYS.linkDataPrefix + linkId);
-            
-            // 链接不存在或已失效
-            if (!linkDataStr) {
-                showInvalidSuggestionPage('抱歉，该建议收集表单已过期或不存在');
+            // 如果链接不存在，直接显示已过期
+            if (!link) {
+                showLinkView();
                 return;
             }
             
-            const linkData = JSON.parse(linkDataStr);
-            const now = new Date().getTime();
-            currentLinkData = linkData;
-            
-            // 链接已过期
-            if (now > linkData.expireTime) {
-                showInvalidSuggestionPage('抱歉，该建议收集表单已过期');
-                return;
-            }
-            
-            // 访问次数已达上限
-            if (linkData.currentViews >= linkData.maxViews) {
-                showInvalidSuggestionPage('抱歉，该建议收集表单已关闭');
-                return;
-            }
-            
-            // 绑定表单提交事件
-            elements.submitSuggestion.addEventListener('click', handleFormSubmit);
-            
-            // 计算剩余时间和次数
-            const remainingMinutes = Math.ceil((linkData.expireTime - now) / (60 * 1000));
-            const remainingViews = linkData.maxViews - linkData.currentViews;
-            
-            // 预更新访问次数（实际更新在表单提交后）
-            linkData.currentViews++;
-        }
-
-        // 处理表单提交
-        function handleFormSubmit() {
-            if (!currentLinkData) return;
-            
-            // 获取表单数据（仅作展示，不实际提交）
-            const playerName = elements.playerName.value.trim() || '匿名玩家';
-            const suggestionType = elements.suggestionType.options[elements.suggestionType.selectedIndex].text;
-            
-            // 显示加载状态
-            elements.submitSuggestion.disabled = true;
-            elements.submitSuggestion.textContent = '提交中...';
-            showLoadingOverlay();
-            
-            // 模拟表单提交延迟
-            setTimeout(() => {
-                hideLoadingOverlay();
+            // 检查链接是否有效
+            if (isLinkActive(link)) {
+                // 增加访问次数
+                link.currentViews++;
+                saveLinks();
                 
-                // 保存更新后的访问次数
-                localStorage.setItem(
-                    STORAGE_KEYS.linkDataPrefix + currentLinkData.id, 
-                    JSON.stringify(currentLinkData)
-                );
+                // 显示内容
+                activeContent.classList.remove('hidden');
+                expiredContent.classList.add('hidden');
                 
-                // 隐藏表单，显示实际内容
-                elements.suggestionForm.style.display = 'none';
-                elements.contentDisplay.classList.add('active');
-                elements.metaInfo.classList.add('active');
-                
-                // 根据内容类型显示不同内容
-                if (currentLinkData.contentType === 'link') {
-                    elements.linkContent.style.display = 'block';
-                    elements.displayedLink.textContent = currentLinkData.contentData;
-                    
-                    // 绑定链接打开事件
-                    elements.openLinkBtn.addEventListener('click', () => {
-                        window.open(currentLinkData.contentData, '_blank');
-                    });
-                } else if (currentLinkData.contentType === 'image') {
-                    elements.imageContent.style.display = 'block';
-                    elements.displayedImage.src = currentLinkData.contentData;
-                    
-                    // 绑定图片打开事件
-                    elements.openImageBtn.addEventListener('click', () => {
-                        const newWindow = window.open('', '_blank');
-                        newWindow.document.write(`<img src="${currentLinkData.contentData}" style="max-width: 100%; max-height: 100vh;" alt="图片内容">`);
-                        newWindow.document.close();
-                    });
+                if (link.type === 'url') {
+                    urlContent.classList.remove('hidden');
+                    imageContent.classList.add('hidden');
+                    contentFrame.src = link.value;
+                } else {
+                    urlContent.classList.add('hidden');
+                    imageContent.classList.remove('hidden');
+                    contentImage.src = link.value;
+                    contentImage.alt = '链接内容图片';
                 }
                 
-                // 更新剩余次数和时间信息
-                const now = new Date().getTime();
-                const remainingMinutes = Math.ceil((currentLinkData.expireTime - now) / (60 * 1000));
-                const remainingViews = currentLinkData.maxViews - currentLinkData.currentViews;
+                viewCount.textContent = `已查看: ${link.currentViews}/${link.maxViews} 次`;
                 
-                elements.remainingViews.textContent = `剩余查看次数：${remainingViews}次`;
-                elements.remainingTime.textContent = `有效时间：约${remainingMinutes}分钟`;
-                
-                // 显示提交成功提示
-                showToast(`感谢 ${playerName} 的${suggestionType}，已成功提交！`);
-                
-            }, CONFIG.formSubmitDelay);
+                // 如果达到最大访问次数，标记为过期
+                if (link.currentViews >= link.maxViews) {
+                    link.expiryTime = Date.now() - 1;
+                    saveLinks();
+                }
+            }
+            
+            showLinkView();
         }
-
-        // 显示无效的建议收集页面
-        function showInvalidSuggestionPage(message) {
-            // 隐藏表单，显示错误信息
-            elements.suggestionForm.style.display = 'none';
-            elements.contentDisplay.style.display = 'none';
-            elements.metaInfo.style.display = 'none';
-            
-            // 添加错误信息
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'status invalid';
-            errorDiv.style.textAlign = 'center';
-            errorDiv.style.padding = '20px';
-            errorDiv.style.margin = '20px 0';
-            errorDiv.textContent = message;
-            
-            // 插入到页面中
-            const introElement = document.querySelector('.suggestion-intro');
-            introElement.parentNode.insertBefore(errorDiv, introElement.nextSibling);
+        
+        // 检查链接是否有效
+        function isLinkActive(link) {
+            return Date.now() < link.expiryTime && link.currentViews < link.maxViews;
         }
-
-        // 复制到剪贴板（兼容处理）
-        function copyToClipboard() {
-            const text = elements.generatedLink.value;
-            
-            if (!text) return;
-            
-            // 现代浏览器API
-            if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(text)
-                    .then(() => {
-                        showToast('链接已复制到剪贴板');
-                    })
-                    .catch(err => {
-                        fallbackCopy(text);
-                    });
-            } else {
-                // 兼容性回退方案
-                fallbackCopy(text);
+        
+        // 复制到剪贴板
+        function copyToClipboard(text, button) {
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = button.textContent;
+                button.textContent = '已复制';
+                button.classList.add('text-green-600');
+                
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.classList.remove('text-green-600');
+                }, 2000);
+            });
+        }
+        
+        // 删除链接
+        function deleteLink(linkId) {
+            if (confirm('确定要删除这个链接吗？')) {
+                currentLinks = currentLinks.filter(link => link.id !== linkId);
+                saveLinks();
+                renderLinksList();
             }
         }
-
-        // 兼容性复制方案
-        function fallbackCopy(text) {
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            textarea.style.position = 'fixed';
-            document.body.appendChild(textarea);
-            textarea.select();
-            
-            try {
-                const successful = document.execCommand('copy');
-                showToast(successful ? '链接已复制到剪贴板' : '复制失败，请手动复制');
-            } catch (err) {
-                showToast('复制失败，请手动复制');
-            } finally {
-                document.body.removeChild(textarea);
-            }
-        }
-
-        // 显示提示框
-        function showToast(message) {
-            const toast = elements.toast;
-            toast.textContent = message;
-            toast.classList.add('show');
+        
+        // 显示提示
+        function showToast() {
+            successToast.classList.remove('translate-y-20', 'opacity-0');
             
             setTimeout(() => {
-                toast.classList.remove('show');
+                successToast.classList.add('translate-y-20', 'opacity-0');
             }, 3000);
         }
-
-        // 初始化应用
-        init();
+        
+        // 显示密码界面
+        function showPasswordScreen() {
+            passwordScreen.classList.remove('hidden');
+            mainTool.classList.add('hidden');
+            linkView.classList.add('hidden');
+        }
+        
+        // 显示主工具界面
+        function showMainTool() {
+            passwordScreen.classList.add('hidden');
+            mainTool.classList.remove('hidden');
+            linkView.classList.add('hidden');
+        }
+        
+        // 显示链接查看界面
+        function showLinkView() {
+            passwordScreen.classList.add('hidden');
+            mainTool.classList.add('hidden');
+            linkView.classList.remove('hidden');
+            
+            // 如果没有活动内容，显示已过期
+            if (activeContent.classList.contains('hidden')) {
+                expiredContent.classList.remove('hidden');
+            }
+        }
+        
+        // 暴露函数到全局，以便在HTML中调用
+        window.copyToClipboard = copyToClipboard;
+        window.deleteLink = deleteLink;
     </script>
 </body>
 </html>
-    
