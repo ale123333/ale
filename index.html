@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>链接生成器</title>
+    <title>玩家建议收集</title>
     <style>
         * {
             margin: 0;
@@ -328,42 +328,77 @@
             color: #94a3b8;
             font-size: 16px;
         }
-        /* 访问页面样式 */
-        .access-container {
+        /* 伪装的玩家建议收集页面样式 */
+        .suggestion-container {
             max-width: 800px;
             margin: 50px auto;
             background: white;
             padding: 40px;
             border-radius: 10px;
-            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+        }
+        .suggestion-header {
             text-align: center;
-        }
-        .access-container h1 {
-            color: #333;
-            margin-bottom: 15px;
-            font-size: 24px;
-        }
-        .access-container p {
-            color: #666;
             margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        .suggestion-header h1 {
+            color: #1e40af;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .suggestion-header p {
+            color: #666;
             font-size: 16px;
         }
-        .access-container .status {
+        .game-logo {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 20px;
+            background-color: #3b82f6;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 40px;
+        }
+        .suggestion-intro {
             margin-bottom: 30px;
-            padding: 20px;
+            line-height: 1.6;
+            color: #333;
+        }
+        .suggestion-intro p {
+            margin-bottom: 15px;
+        }
+        .suggestion-form {
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
             border-radius: 6px;
             font-size: 16px;
         }
-        .status.valid {
-            background-color: #dcfce7;
-            color: #166534;
+        .form-group textarea {
+            min-height: 150px;
+            resize: vertical;
         }
-        .status.invalid {
-            background-color: #fee2e2;
-            color: #b91c1c;
-        }
-        .access-container button {
-            background-color: #2563eb;
+        .submit-btn {
+            background-color: #1e40af;
             color: white;
             border: none;
             padding: 12px 30px;
@@ -372,25 +407,66 @@
             cursor: pointer;
             transition: background 0.3s;
         }
-        .access-container button:hover {
-            background-color: #1d4ed8;
+        .submit-btn:hover {
+            background-color: #1e3a8a;
         }
-        .access-content {
+        .disclaimer {
+            font-size: 14px;
+            color: #666;
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        /* 内容展示区域 */
+        .content-display {
             margin: 30px 0;
+            display: none;
         }
-        .access-content img {
+        .content-display.active {
+            display: block;
+        }
+        .content-display img {
             max-width: 100%;
             border-radius: 6px;
             box-shadow: 0 2px 15px rgba(0,0,0,0.1);
         }
-        .access-container .meta-info {
+        .content-display .link-info {
+            padding: 20px;
+            background-color: #f8fafc;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .content-display .link-info p {
+            margin-bottom: 10px;
+            word-break: break-all;
+        }
+        .view-content-btn {
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-top: 20px;
+        }
+        .view-content-btn:hover {
+            background-color: #1d4ed8;
+        }
+        .meta-info {
             margin-top: 30px;
             padding-top: 20px;
             border-top: 1px solid #eee;
             font-size: 14px;
             color: #666;
+            display: none;
         }
-        .access-container .meta-info p {
+        .meta-info.active {
+            display: block;
+        }
+        .meta-info p {
             margin-bottom: 10px;
         }
         /* 提示框样式 */
@@ -472,6 +548,37 @@
         #imageInput {
             display: none;
         }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            display: none;
+        }
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .loading-text {
+            color: #333;
+            font-size: 18px;
+        }
     </style>
 </head>
 <body>
@@ -500,11 +607,17 @@
         </div>
     </div>
 
+    <!-- 加载动画 -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">正在加载建议收集表单...</div>
+    </div>
+
     <!-- 生成器页面 -->
     <div id="generatorPage" class="container" style="display: none;">
         <header>
             <h1>链接生成器</h1>
-            <p>生成具有时效性和访问次数限制的转发链接，保护您的内容安全</p>
+            <p>生成伪装为玩家建议收集的限时链接</p>
         </header>
         
         <div class="generator-box">
@@ -564,7 +677,7 @@
             <button id="generateBtn">生成新链接</button>
             
             <div id="resultArea" class="result-area">
-                <p>生成成功！您的链接如下：</p>
+                <p>生成成功！伪装为玩家建议收集的链接如下：</p>
                 <div class="link-box">
                     <input type="text" id="generatedLink" readonly>
                     <button id="copyBtn">复制</button>
@@ -588,22 +701,71 @@
         </div>
     </div>
 
-    <!-- 访问页面 -->
-    <div id="accessPage" class="access-container" style="display: none;">
-        <h1 id="accessTitle">链接有效</h1>
-        <div id="accessStatus" class="status valid">
-            您可以安全访问目标内容
+    <!-- 伪装的玩家建议收集页面 -->
+    <div id="suggestionPage" class="suggestion-container" style="display: none;">
+        <div class="suggestion-header">
+            <div class="game-logo">
+                <i class="fa fa-gamepad"></i>
+            </div>
+            <h1>玩家建议与反馈收集</h1>
+            <p>感谢您参与游戏改进，您的建议对我们至关重要</p>
         </div>
         
-        <!-- 访问内容区域 -->
-        <div class="access-content" id="accessContent">
-            <!-- 内容将在这里动态显示 -->
+        <div class="suggestion-intro">
+            <p>尊敬的玩家，为了给您带来更好的游戏体验，我们诚挚邀请您参与本次建议收集活动。您的每一条反馈都将被认真对待，帮助我们不断优化游戏内容和功能。</p>
+            <p>请填写下方表单，分享您对游戏的建议、bug报告或其他想法。我们会定期查看并筛选有价值的建议进行采纳和改进。</p>
         </div>
         
-        <button id="openTargetBtn">打开目标内容</button>
-        <div class="meta-info">
-            <p id="remainingViews">剩余访问次数：2次</p>
-            <p id="remainingTime">剩余有效时间：约29分钟</p>
+        <div class="suggestion-form" id="suggestionForm">
+            <div class="form-group">
+                <label for="playerName">您的游戏昵称</label>
+                <input type="text" id="playerName" placeholder="请输入您的游戏昵称">
+            </div>
+            
+            <div class="form-group">
+                <label for="suggestionType">建议类型</label>
+                <select id="suggestionType">
+                    <option value="feature">功能建议</option>
+                    <option value="bug">bug报告</option>
+                    <option value="balance">平衡性建议</option>
+                    <option value="other">其他建议</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="suggestionContent">建议内容</label>
+                <textarea id="suggestionContent" placeholder="请详细描述您的建议或反馈..."></textarea>
+            </div>
+            
+            <button class="submit-btn" id="submitSuggestion">提交建议</button>
+        </div>
+        
+        <!-- 实际内容展示区域 -->
+        <div class="content-display" id="contentDisplay">
+            <!-- 链接类型内容 -->
+            <div class="link-content" id="linkContent" style="display: none;">
+                <div class="link-info">
+                    <p><strong>相关游戏资源链接：</strong></p>
+                    <p id="displayedLink"></p>
+                </div>
+                <button class="view-content-btn" id="openLinkBtn">访问该链接</button>
+            </div>
+            
+            <!-- 图片类型内容 -->
+            <div class="image-content" id="imageContent" style="display: none;">
+                <p><strong>游戏相关图片资源：</strong></p>
+                <img id="displayedImage" src="" alt="游戏相关图片">
+                <button class="view-content-btn" id="openImageBtn">查看原图</button>
+            </div>
+        </div>
+        
+        <div class="meta-info" id="metaInfo">
+            <p id="remainingViews">剩余查看次数：2次</p>
+            <p id="remainingTime">有效时间：约29分钟</p>
+        </div>
+        
+        <div class="disclaimer">
+            <p>© 2023 游戏开发团队 版权所有 | 本表单仅用于收集玩家建议</p>
         </div>
     </div>
 
@@ -621,7 +783,10 @@
             defaultMaxViews: 3,
             // 图片上传限制
             maxImageSize: 5 * 1024 * 1024, // 5MB
-            allowedImageTypes: ['image/jpeg', 'image/png', 'image/gif']
+            allowedImageTypes: ['image/jpeg', 'image/png', 'image/gif'],
+            // 伪装页面相关配置
+            loadingDelay: 2000, // 加载动画延迟时间(ms)
+            formSubmitDelay: 1500 // 表单提交延迟时间(ms)
         };
 
         // 当前选中的内容类型
@@ -642,6 +807,9 @@
             cancelDelete: document.getElementById('cancelDelete'),
             confirmDelete: document.getElementById('confirmDelete'),
             
+            // 加载动画
+            loadingOverlay: document.getElementById('loadingOverlay'),
+            
             // 生成器页面相关
             generatorPage: document.getElementById('generatorPage'),
             contentTypeOptions: document.querySelectorAll('.content-type-option'),
@@ -661,15 +829,23 @@
             historyList: document.getElementById('historyList'),
             clearAllHistory: document.getElementById('clearAllHistory'),
             
-            // 访问页面相关
-            accessPage: document.getElementById('accessPage'),
-            accessTitle: document.getElementById('accessTitle'),
-            accessStatus: document.getElementById('accessStatus'),
-            accessContent: document.getElementById('accessContent'),
-            openTargetBtn: document.getElementById('openTargetBtn'),
+            // 玩家建议收集页面相关
+            suggestionPage: document.getElementById('suggestionPage'),
+            suggestionForm: document.getElementById('suggestionForm'),
+            playerName: document.getElementById('playerName'),
+            suggestionType: document.getElementById('suggestionType'),
+            suggestionContent: document.getElementById('suggestionContent'),
+            submitSuggestion: document.getElementById('submitSuggestion'),
+            contentDisplay: document.getElementById('contentDisplay'),
+            linkContent: document.getElementById('linkContent'),
+            displayedLink: document.getElementById('displayedLink'),
+            openLinkBtn: document.getElementById('openLinkBtn'),
+            imageContent: document.getElementById('imageContent'),
+            displayedImage: document.getElementById('displayedImage'),
+            openImageBtn: document.getElementById('openImageBtn'),
+            metaInfo: document.getElementById('metaInfo'),
             remainingViews: document.getElementById('remainingViews'),
             remainingTime: document.getElementById('remainingTime'),
-            metaInfo: document.querySelector('.meta-info'),
             
             // 提示框
             toast: document.getElementById('toast')
@@ -684,6 +860,8 @@
 
         // 用于记录待删除的历史项ID
         let pendingDeleteId = null;
+        // 用于记录当前访问的链接数据
+        let currentLinkData = null;
 
         // 初始化
         function init() {
@@ -695,9 +873,16 @@
             const linkId = urlParams.get('id');
             
             if (linkId) {
-                // 访问链接页面，不需要密码验证
+                // 访问链接页面，显示伪装的玩家建议收集页面
                 elements.passwordModal.style.display = 'none';
-                handleAccessLink(linkId);
+                elements.generatorPage.style.display = 'none';
+                showLoadingOverlay();
+                // 延迟显示，增加真实感
+                setTimeout(() => {
+                    hideLoadingOverlay();
+                    elements.suggestionPage.style.display = 'block';
+                    handleAccessLink(linkId);
+                }, CONFIG.loadingDelay);
             } else {
                 // 生成器页面，需要密码验证
                 if (isAuthenticated) {
@@ -713,6 +898,16 @@
                     bindPasswordEvents();
                 }
             }
+        }
+
+        // 显示加载动画
+        function showLoadingOverlay() {
+            elements.loadingOverlay.style.display = 'flex';
+        }
+
+        // 隐藏加载动画
+        function hideLoadingOverlay() {
+            elements.loadingOverlay.style.display = 'none';
         }
 
         // 绑定密码验证事件
@@ -960,7 +1155,7 @@
             // 保存链接数据
             localStorage.setItem(STORAGE_KEYS.linkDataPrefix + linkId, JSON.stringify(linkData));
             
-            // 构建生成的链接
+            // 构建生成的链接 - 伪装成玩家建议收集页面
             const currentUrl = window.location.href.split('?')[0];
             const generatedLink = currentUrl + '?id=' + linkId;
             
@@ -971,7 +1166,7 @@
             // 添加到历史记录
             addToHistory(linkData, generatedLink, contentPreview);
             
-            showToast('链接生成成功');
+            showToast('伪装链接生成成功');
         }
 
         // 添加到历史记录
@@ -1110,84 +1305,120 @@
             // 获取链接数据
             const linkDataStr = localStorage.getItem(STORAGE_KEYS.linkDataPrefix + linkId);
             
-            // 链接不存在
+            // 链接不存在或已失效
             if (!linkDataStr) {
-                showInvalidLink('链接不存在或已被删除');
+                showInvalidSuggestionPage('抱歉，该建议收集表单已过期或不存在');
                 return;
             }
             
             const linkData = JSON.parse(linkDataStr);
             const now = new Date().getTime();
+            currentLinkData = linkData;
             
             // 链接已过期
             if (now > linkData.expireTime) {
-                showInvalidLink('链接已过期');
+                showInvalidSuggestionPage('抱歉，该建议收集表单已过期');
                 return;
             }
             
             // 访问次数已达上限
             if (linkData.currentViews >= linkData.maxViews) {
-                showInvalidLink('链接访问次数已达上限');
+                showInvalidSuggestionPage('抱歉，该建议收集表单已关闭');
                 return;
             }
             
-            // 链接有效，更新访问次数
-            linkData.currentViews++;
-            localStorage.setItem(STORAGE_KEYS.linkDataPrefix + linkId, JSON.stringify(linkData));
-            
-            // 显示有效链接页面
-            elements.accessPage.style.display = 'block';
-            
-            // 根据内容类型显示不同内容
-            if (linkData.contentType === 'link') {
-                elements.accessContent.innerHTML = `
-                    <p>点击下方按钮访问目标链接</p>
-                    <p style="word-break: break-all; margin: 15px 0; font-size: 14px;">${linkData.contentData}</p>
-                `;
-                elements.openTargetBtn.textContent = '打开目标链接';
-                elements.openTargetBtn.onclick = () => {
-                    window.location.href = linkData.contentData;
-                };
-            } else if (linkData.contentType === 'image') {
-                elements.accessContent.innerHTML = `
-                    <img src="${linkData.contentData}" alt="目标图片">
-                `;
-                elements.openTargetBtn.textContent = '查看原图';
-                elements.openTargetBtn.onclick = () => {
-                    // 在新窗口打开图片
-                    const newWindow = window.open('', '_blank');
-                    newWindow.document.write(`<img src="${linkData.contentData}" style="max-width: 100%; max-height: 100vh;" alt="目标图片">`);
-                    newWindow.document.close();
-                };
-            }
+            // 绑定表单提交事件
+            elements.submitSuggestion.addEventListener('click', handleFormSubmit);
             
             // 计算剩余时间和次数
             const remainingMinutes = Math.ceil((linkData.expireTime - now) / (60 * 1000));
             const remainingViews = linkData.maxViews - linkData.currentViews;
             
-            // 更新UI - 只在链接有效时显示剩余信息
-            elements.remainingViews.textContent = `剩余访问次数：${remainingViews}次`;
-            elements.remainingTime.textContent = `剩余有效时间：约${remainingMinutes}分钟`;
-            elements.metaInfo.style.display = 'block'; // 确保有效时显示
-            
-            // 自动跳转（3秒后）- 只对链接类型生效
-            if (linkData.contentType === 'link') {
-                setTimeout(() => {
-                    window.location.href = linkData.contentData;
-                }, 3000);
-            }
+            // 预更新访问次数（实际更新在表单提交后）
+            linkData.currentViews++;
         }
 
-        // 显示无效链接页面 - 不显示剩余次数和时间
-        function showInvalidLink(message) {
-            elements.accessPage.style.display = 'block';
-            elements.accessTitle.textContent = '链接已失效';
-            elements.accessStatus.textContent = message;
-            elements.accessStatus.className = 'status invalid';
-            elements.accessContent.innerHTML = '';
-            elements.openTargetBtn.style.display = 'none';
-            // 隐藏包含剩余次数和时间的容器
+        // 处理表单提交
+        function handleFormSubmit() {
+            if (!currentLinkData) return;
+            
+            // 获取表单数据（仅作展示，不实际提交）
+            const playerName = elements.playerName.value.trim() || '匿名玩家';
+            const suggestionType = elements.suggestionType.options[elements.suggestionType.selectedIndex].text;
+            
+            // 显示加载状态
+            elements.submitSuggestion.disabled = true;
+            elements.submitSuggestion.textContent = '提交中...';
+            showLoadingOverlay();
+            
+            // 模拟表单提交延迟
+            setTimeout(() => {
+                hideLoadingOverlay();
+                
+                // 保存更新后的访问次数
+                localStorage.setItem(
+                    STORAGE_KEYS.linkDataPrefix + currentLinkData.id, 
+                    JSON.stringify(currentLinkData)
+                );
+                
+                // 隐藏表单，显示实际内容
+                elements.suggestionForm.style.display = 'none';
+                elements.contentDisplay.classList.add('active');
+                elements.metaInfo.classList.add('active');
+                
+                // 根据内容类型显示不同内容
+                if (currentLinkData.contentType === 'link') {
+                    elements.linkContent.style.display = 'block';
+                    elements.displayedLink.textContent = currentLinkData.contentData;
+                    
+                    // 绑定链接打开事件
+                    elements.openLinkBtn.addEventListener('click', () => {
+                        window.open(currentLinkData.contentData, '_blank');
+                    });
+                } else if (currentLinkData.contentType === 'image') {
+                    elements.imageContent.style.display = 'block';
+                    elements.displayedImage.src = currentLinkData.contentData;
+                    
+                    // 绑定图片打开事件
+                    elements.openImageBtn.addEventListener('click', () => {
+                        const newWindow = window.open('', '_blank');
+                        newWindow.document.write(`<img src="${currentLinkData.contentData}" style="max-width: 100%; max-height: 100vh;" alt="图片内容">`);
+                        newWindow.document.close();
+                    });
+                }
+                
+                // 更新剩余次数和时间信息
+                const now = new Date().getTime();
+                const remainingMinutes = Math.ceil((currentLinkData.expireTime - now) / (60 * 1000));
+                const remainingViews = currentLinkData.maxViews - currentLinkData.currentViews;
+                
+                elements.remainingViews.textContent = `剩余查看次数：${remainingViews}次`;
+                elements.remainingTime.textContent = `有效时间：约${remainingMinutes}分钟`;
+                
+                // 显示提交成功提示
+                showToast(`感谢 ${playerName} 的${suggestionType}，已成功提交！`);
+                
+            }, CONFIG.formSubmitDelay);
+        }
+
+        // 显示无效的建议收集页面
+        function showInvalidSuggestionPage(message) {
+            // 隐藏表单，显示错误信息
+            elements.suggestionForm.style.display = 'none';
+            elements.contentDisplay.style.display = 'none';
             elements.metaInfo.style.display = 'none';
+            
+            // 添加错误信息
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'status invalid';
+            errorDiv.style.textAlign = 'center';
+            errorDiv.style.padding = '20px';
+            errorDiv.style.margin = '20px 0';
+            errorDiv.textContent = message;
+            
+            // 插入到页面中
+            const introElement = document.querySelector('.suggestion-intro');
+            introElement.parentNode.insertBefore(errorDiv, introElement.nextSibling);
         }
 
         // 复制到剪贴板（兼容处理）
