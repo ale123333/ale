@@ -1,410 +1,1191 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>限时限次链接生成器</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Arial', sans-serif;
+<html lang="zh-CN"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>链接转发生成</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            tech: {
+              primary: '#165DFF',
+              secondary: '#7B2FFD',
+              accent: '#06B6D4',
+              dark: '#0F172A',
+              light: '#E2E8F0',
+              gray: '#1E293B'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif']
+          },
+          animation: {
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'float': 'float 5s ease-in-out infinite',
+            'glow': 'glow 2s ease-in-out infinite alternate',
+            'shake': 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both',
+            'bounce-light': 'bounce-light 1s ease-in-out'
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-6px)' }
+            },
+            glow: {
+              '0%': { boxShadow: '0 0 5px rgba(22, 93, 255, 0.5)' },
+              '100%': { boxShadow: '0 0 15px rgba(22, 93, 255, 0.8)' }
+            },
+            shake: {
+              '10%, 90%': { transform: 'translate3d(-1px, 0, 0)' },
+              '20%, 80%': { transform: 'translate3d(2px, 0, 0)' },
+              '30%, 50%, 70%': { transform: 'translate3d(-3px, 0, 0)' },
+              '40%, 60%': { transform: 'translate3d(3px, 0, 0)' }
+            },
+            'bounce-light': {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-5px)' }
+            }
+          }
         }
-        body {
-            background-color: #f0f2f5;
-            padding: 20px;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        header {
-            text-align: center;
-            margin: 30px 0;
-        }
-        header h1 {
-            color: #333;
-            margin-bottom: 10px;
-        }
-        header p {
-            color: #666;
-            font-size: 16px;
-        }
-        .generator-box {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
-            margin-bottom: 30px;
-            text-align: center;
-        }
-        .generator-box button {
-            background-color: #2563eb;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 6px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-        .generator-box button:hover {
-            background-color: #1d4ed8;
-        }
-        .link-result {
-            margin-top: 20px;
-            display: none;
-        }
-        .link-result input {
-            width: 100%;
-            padding: 12px 15px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            margin-bottom: 10px;
-            font-size: 14px;
-        }
-        .link-result .btn-group {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-        }
-        .link-result .btn-group button {
-            background-color: #64748b;
-            padding: 8px 16px;
-            font-size: 14px;
-        }
-        .link-result .btn-group button:hover {
-            background-color: #475569;
-        }
-        .history-box {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
-        }
-        .history-box h2 {
-            color: #333;
-            margin-bottom: 20px;
-            font-size: 18px;
-        }
-        .history-list {
-            max-height: 300px;
-            overflow-y: auto;
-            border-top: 1px solid #eee;
-        }
-        .history-item {
-            padding: 15px;
-            border-bottom: 1px solid #eee;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .history-item .link-info {
-            flex: 1;
-        }
-        .history-item .link-info p {
-            color: #666;
-            font-size: 14px;
-            margin-top: 5px;
-        }
-        .history-item .link-status {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-        }
-        .status-active {
-            background-color: #dcfce7;
-            color: #16a34a;
-        }
-        .status-expired {
-            background-color: #fee2e2;
-            color: #dc2626;
-        }
-        .empty-hint {
-            text-align: center;
-            color: #9ca3af;
-            padding: 30px 0;
-            font-size: 14px;
-        }
-        /* 访问页面样式 */
-        .access-container {
-            max-width: 600px;
-            margin: 100px auto;
-            background: white;
-            padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
-            text-align: center;
-        }
-        .access-container h1 {
-            margin-bottom: 20px;
-            font-size: 24px;
-        }
-        .access-container .target-link {
-            display: inline-block;
-            margin: 20px 0;
-            padding: 12px 24px;
-            background-color: #2563eb;
-            color: white;
-            text-decoration: none;
-            border-radius: 6px;
-            transition: background 0.3s;
-        }
-        .access-container .target-link:hover {
-            background-color: #1d4ed8;
-        }
-        .access-container .info {
-            color: #666;
-            margin-top: 20px;
-            font-size: 14px;
-        }
-    </style>
+      }
+    }
+  </script>
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .text-shadow {
+        text-shadow: 0 0 8px rgba(22, 93, 255, 0.7);
+      }
+
+      .text-gradient {
+        background-clip: text;
+        -webkit-background-clip: text;
+        color: transparent;
+        background-image: linear-gradient(90deg, #165DFF, #7B2FFD);
+      }
+
+      .bg-grid {
+        background-size: 30px 30px;
+        background-image:
+          linear-gradient(to right, rgba(30, 41, 59, 0.1) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(30, 41, 59, 0.1) 1px, transparent 1px);
+      }
+
+      .glass-effect {
+        background: rgba(30, 41, 59, 0.6);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+      }
+
+      .border-glow {
+        box-shadow: 0 0 4px rgba(22, 93, 255, 0.5),
+          inset 0 0 4px rgba(22, 93, 255, 0.3);
+      }
+      
+      .show {
+        opacity: 1 !important;
+        transform: scale(1) !important;
+      }
+      
+      .modal-show {
+        opacity: 1 !important;
+        pointer-events: auto !important;
+      }
+      
+      .modal-show .modal-content {
+        transform: scale(1) !important;
+      }
+      
+      /* 密码弹窗样式 */
+      .password-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background-color: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(8px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 999;
+        transition: opacity 0.3s ease;
+      }
+      
+      .password-modal-content {
+        width: 90%;
+        max-width: 400px;
+        background-color: rgba(30, 41, 59, 0.8);
+        border: 1px solid rgba(22, 93, 255, 0.3);
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 0 20px rgba(22, 93, 255, 0.1);
+      }
+      
+      .input-disabled {
+        background-color: rgba(30, 41, 59, 0.4) !important;
+        cursor: not-allowed !important;
+        border-color: rgba(22, 93, 255, 0.2) !important;
+      }
+      
+      .btn-disabled {
+        background: linear-gradient(to right, rgba(22, 93, 255, 0.4), rgba(123, 47, 253, 0.4)) !important;
+        cursor: not-allowed !important;
+        transform: none !important;
+        box-shadow: none !important;
+        pointer-events: none !important;
+      }
+      
+      /* 通知提示 */
+      .notification {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%) translateY(100px);
+        padding: 12px 20px;
+        border-radius: 6px;
+        background-color: rgba(30, 41, 59, 0.9);
+        color: #fff;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        z-index: 1000;
+        transition: transform 0.3s ease;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        max-width: 90%;
+      }
+      
+      .notification.show {
+        transform: translateX(-50%) translateY(0);
+      }
+      
+      .notification.success {
+        border-left: 4px solid #10b981;
+      }
+      
+      .notification.error {
+        border-left: 4px solid #ef4444;
+      }
+      
+      .notification.info {
+        border-left: 4px solid #3b82f6;
+      }
+      
+      .notification i {
+        margin-right: 8px;
+      }
+      
+      .notification-action {
+        color: #3b82f6;
+        margin-left: 10px;
+        cursor: pointer;
+        text-decoration: underline;
+        font-weight: 500;
+      }
+      
+      /* 复制辅助提示 */
+      .copy-hint {
+        position: absolute;
+        background: rgba(15, 23, 42, 0.9);
+        color: white;
+        padding: 5px 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.3s;
+        z-index: 50;
+      }
+      
+      /* 自定义确认对话框 */
+      .custom-confirm {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background-color: rgba(15, 23, 42, 0.7);
+        backdrop-filter: blur(4px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+      }
+      
+      .custom-confirm.show {
+        opacity: 1;
+        pointer-events: auto;
+      }
+      
+      .confirm-dialog {
+        background-color: rgba(30, 41, 59, 0.95);
+        border: 1px solid rgba(22, 93, 255, 0.3);
+        border-radius: 10px;
+        padding: 24px;
+        width: 90%;
+        max-width: 350px;
+        transform: scale(0.9);
+        transition: transform 0.3s ease;
+      }
+      
+      .custom-confirm.show .confirm-dialog {
+        transform: scale(1);
+      }
+      
+      .confirm-icon {
+        text-align: center;
+        margin-bottom: 16px;
+      }
+      
+      .confirm-icon i {
+        font-size: 40px;
+        color: #f59e0b;
+      }
+      
+      .confirm-message {
+        text-align: center;
+        margin-bottom: 24px;
+        color: #e2e8f0;
+      }
+      
+      .confirm-buttons {
+        display: flex;
+        gap: 12px;
+      }
+      
+      .confirm-btn {
+        flex: 1;
+        padding: 8px 0;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: all 0.2s ease;
+      }
+      
+      .confirm-btn.cancel {
+        background-color: rgba(30, 41, 59, 0.8);
+        color: #e2e8f0;
+        border: 1px solid rgba(22, 93, 255, 0.2);
+      }
+      
+      .confirm-btn.cancel:hover {
+        background-color: rgba(30, 41, 59, 1);
+      }
+      
+      .confirm-btn.confirm {
+        background-color: #ef4444;
+        color: white;
+        border: none;
+      }
+      
+      .confirm-btn.confirm:hover {
+        background-color: #dc2626;
+      }
+    }
+  </style>
 </head>
-<body>
-    <!-- 生成器页面（默认显示） -->
-    <div id="generator-page" class="container">
-        <header>
-            <h1>限时限次链接生成器</h1>
-            <p>生成指向指定内容的链接，自动生效30分钟，最多打开3次</p>
-        </header>
 
-        <div class="generator-box">
-            <button id="generateBtn">生成新链接</button>
-            <div id="linkResult" class="link-result">
-                <input type="text" id="generatedLinkInput" readonly>
-                <div class="btn-group">
-                    <button id="copyBtn">复制链接</button>
-                    <button id="testBtn">测试链接</button>
-                </div>
-            </div>
-        </div>
+<body class="bg-tech-dark text-tech-light font-sans min-h-screen bg-grid relative overflow-x-hidden py-3">
+  <!-- 装饰性背景元素 -->
+  <div class="absolute inset-0 overflow-hidden pointer-events-none z-0">
+    <div class="absolute top-1/4 -left-12 w-40 h-40 bg-tech-primary/20 rounded-full blur-2xl animate-pulse-slow"></div>
+    <div class="absolute bottom-1/3 -right-12 w-56 h-56 bg-tech-secondary/20 rounded-full blur-2xl animate-pulse-slow" style="animation-delay: 1s;"></div>
+  </div>
 
-        <div class="history-box">
-            <h2>生成历史</h2>
-            <div id="historyList" class="history-list">
-                <div class="empty-hint">暂无生成记录</div>
-            </div>
+  <!-- 通知提示 -->
+  <div id="notification" class="notification">
+    <i class="fa fa-info-circle"></i>
+    <span id="notificationText"></span>
+    <span id="notificationAction" class="notification-action hidden"></span>
+  </div>
+
+  <!-- 自定义确认对话框 -->
+  <div id="customConfirm" class="custom-confirm">
+    <div class="confirm-dialog">
+      <div class="confirm-icon">
+        <i class="fa fa-exclamation-triangle"></i>
+      </div>
+      <div class="confirm-message" id="confirmMessage">
+        确定要执行此操作吗？
+      </div>
+      <div class="confirm-buttons">
+        <button id="cancelBtn" class="confirm-btn cancel">取消</button>
+        <button id="confirmActionBtn" class="confirm-btn confirm">确认</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 密码验证弹窗（工具使用前必须验证） -->
+  <div id="passwordModal" class="password-modal">
+    <div class="password-modal-content">
+      <div class="text-center mb-6">
+        <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-tech-primary/20 flex items-center justify-center animate-float">
+          <i class="fa fa-lock text-tech-primary text-2xl"></i>
         </div>
+        <h2 class="text-xl font-bold text-gradient">验证</h2>
+        <p class="text-tech-light/60 text-sm mt-2"></p>
+      </div>
+      
+      <div class="space-y-4">
+        <div>
+          <label for="toolPassword" class="block text-sm text-tech-light/70 mb-1.5">
+            <i class="fa fa-key text-tech-accent mr-1"></i>访问密码
+          </label>
+          <input type="password" id="toolPassword" class="w-full bg-tech-gray/50 border border-tech-primary/50 rounded-lg py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-tech-primary/50 transition-all" placeholder="请输入密码" autocomplete="off">
+          <p id="passwordError" class="text-red-500 text-xs mt-1.5 hidden">
+            <i class="fa fa-exclamation-circle mr-1"></i>密码错误，请重新输入（正确密码：007）
+          </p>
+        </div>
+        
+        <button id="verifyPasswordBtn" class="w-full bg-gradient-to-r from-tech-primary to-tech-secondary text-white font-medium py-2.5 px-4 rounded-lg shadow-lg shadow-tech-primary/20 hover:shadow-tech-primary/40 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 animate-glow text-sm">
+          <i class="fa fa-unlock-alt mr-1.5"></i>验证并解锁
+        </button>
+        
+        <p class="text-center text-tech-light/40 text-xs mt-2">
+          提示：密码为 <span class="text-tech-accent font-medium">0</span>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 生成器页面（默认隐藏，密码验证通过后显示） -->
+  <div id="generator-page" class="container mx-auto px-4 relative z-10 max-w-6xl opacity-0 pointer-events-none transition-opacity 0.5s ease">
+    <header class="text-center mb-6 mt-4">
+      <h1 class="text-2xl font-bold text-gradient mb-2">链接转发生成</h1>
+      <p class="text-tech-light/70 max-w-xl mx-auto text-sm">安全分享，自动失效，保护链接访问权限</p>
+      <div class="w-32 h-0.5 bg-gradient-to-r from-tech-primary to-tech-secondary mx-auto mt-3 rounded-full"></div>
+    </header>
+
+    <!-- 生成器和配置面板 -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <div class="lg:col-span-2">
+        <div class="glass-effect rounded-xl p-6 border border-tech-primary/30 border-glow transform transition-all duration-300 hover:scale-[1.01]">
+          <div class="mb-4">
+            <label for="originalLink" class="block text-sm text-tech-light/70 mb-2">
+              <i class="fa fa-link text-tech-accent mr-1"></i>原始链接
+            </label>
+            <input type="text" id="originalLink" value="https://work.weixin.qq.com/ca/cawcde5bfd4a49fea9" class="w-full bg-tech-gray/50 border border-tech-primary/50 rounded-lg py-3 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-tech-primary/50 transition-all input-disabled" placeholder="请输入要转发的链接" disabled="">
+          </div>
+
+          <button id="generateBtn" class="w-full bg-gradient-to-r from-tech-primary to-tech-secondary text-white font-medium py-3 px-6 rounded-lg shadow-lg shadow-tech-primary/20 hover:shadow-tech-primary/40 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 animate-glow text-sm btn-disabled" disabled="">
+            <i class="fa fa-magic mr-1.5"></i>生成转发链接
+          </button>
+
+          <div id="linkResult" class="link-result mt-6 opacity-0 transition-all duration-500 scale-95">
+            <div class="relative mb-4">
+              <input type="text" id="generatedLinkInput" readonly="" class="w-full bg-tech-gray/50 border border-tech-primary/50 rounded-lg py-3 px-4 pr-16 text-sm focus:outline-none focus:ring-2 focus:ring-tech-primary/50 transition-all input-disabled" disabled="">
+              <button id="copyBtn" class="absolute right-3 top-1/2 -translate-y-1/2 bg-tech-primary/20 hover:bg-tech-primary/30 text-tech-primary p-2 rounded-md transition-colors text-xs btn-disabled" disabled="">
+                <i class="fa fa-copy mr-1"></i>复制
+              </button>
+            </div>
+
+            <!-- 操作按钮组 -->
+            <div class="flex gap-4">
+              <button id="testBtn" class="flex-1 bg-tech-gray hover:bg-tech-gray/80 text-tech-light py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center text-sm btn-disabled" disabled="">
+                <i class="fa fa-external-link mr-2"></i>测试链接
+              </button>
+              <button id="qrBtn" class="flex-1 bg-tech-secondary/20 hover:bg-tech-secondary/30 text-tech-secondary py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center text-sm btn-disabled" disabled="">
+                <i class="fa fa-qrcode mr-2"></i>生成二维码
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 配置面板 -->
+      <div class="glass-effect rounded-xl p-6 border border-tech-primary/20">
+        <h3 class="text-lg font-medium mb-4 flex items-center">
+          <i class="fa fa-sliders text-tech-accent mr-2 text-sm"></i>转发配置
+        </h3>
+        <div class="space-y-6">
+          <!-- 有效时间配置 -->
+          <div>
+            <label class="block text-sm text-tech-light/70 mb-2">有效时间（分钟）</label>
+            <div class="flex items-center">
+              <input type="number" id="expireMinutes" value="5" min="1" max="1440" class="w-full bg-tech-gray/50 border border-tech-primary/30 rounded-lg py-2.5 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-tech-primary input-disabled" disabled="">
+              <span class="ml-3 text-tech-light/50 text-sm">分钟</span>
+            </div>
+            <p class="text-tech-light/40 text-xs mt-1">设置链接有效时长，过期后无法访问</p>
+          </div>
+
+          <!-- 最大访问次数配置 -->
+          <div>
+            <label class="block text-sm text-tech-light/70 mb-2">最大访问次数</label>
+            <div class="flex items-center">
+              <input type="number" id="maxViews" value="3" min="1" max="100" class="w-full bg-tech-gray/50 border border-tech-primary/30 rounded-lg py-2.5 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-tech-primary input-disabled" disabled="">
+              <span class="ml-3 text-tech-light/50 text-sm">次</span>
+            </div>
+            <p class="text-tech-light/40 text-xs mt-1">设置链接可访问次数，达到上限后失效</p>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- 访问页面（生成的链接指向这里） -->
-    <div id="access-page" class="access-container" style="display: none;">
-        <h1 id="accessStatus" class="valid">链接有效</h1>
-        <p id="accessDesc">点击下方链接访问内容</p>
-        <a href="https://c1nb.cn/KQItA" target="_blank" class="target-link" id="targetLink">打开目标内容</a>
-        <div class="info" id="accessInfo"></div>
+    <!-- 历史记录区域 -->
+    <div class="glass-effect rounded-xl p-6 border border-tech-primary/20 mb-6">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-lg font-semibold flex items-center">
+          <i class="fa fa-history text-tech-accent mr-2 text-sm"></i>转发历史记录
+        </h2>
+        <button id="clearHistory" class="text-sm text-tech-light/60 hover:text-tech-light transition-colors flex items-center btn-disabled" disabled="">
+          <i class="fa fa-trash-o mr-2"></i>清空历史
+        </button>
+      </div>
+
+      <div id="historyList" class="history-list max-h-64 overflow-y-auto pr-3 scrollbar-thin scrollbar-thumb-tech-gray scrollbar-track-transparent">
+        <div class="empty-hint text-center py-10 text-tech-light/50">
+          <div class="w-16 h-16 mx-auto mb-4 text-tech-light/20">
+            <i class="fa fa-folder-open-o text-3xl"></i>
+          </div>
+          <p class="text-base">暂无转发记录，生成链接后将显示在此处</p>
+        </div>
+      </div>
     </div>
 
-    <script>
-        // 核心配置
-        const CONFIG = {
-            targetUrl: "https://c1nb.cn/KQItA", // 目标内容链接
-            expireMinutes: 30, // 有效期（分钟）
-            maxViews: 3 // 最大打开次数
-        };
+    <!-- 页脚 -->
+    <footer class="text-center mt-6 text-tech-light/40 text-sm">
+      <p>© 2025 链接转发生成 | 已解锁</p>
+    </footer>
+  </div>
 
-        // 存储键名
-        const STORAGE_KEYS = {
-            linkHistory: "linkGeneratorHistory", // 生成历史
-            linkDataPrefix: "linkData_" // 单个链接的数据前缀
-        };
+  <!-- 访问页面（生成的链接指向这里） -->
+  <div id="access-page" class="min-h-screen flex items-center justify-center p-4 relative z-10 hidden">
+    <div class="access-container glass-effect rounded-xl p-6 max-w-md w-full border border-tech-primary/30 border-glow">
+      <div id="statusIcon" class="w-16 h-16 mx-auto mb-5 rounded-full bg-tech-primary/20 flex items-center justify-center">
+        <i class="fa fa-check text-tech-primary text-2xl"></i>
+      </div>
 
-        // 页面元素
-        const generatorPage = document.getElementById('generator-page');
-        const accessPage = document.getElementById('access-page');
-        const generateBtn = document.getElementById('generateBtn');
-        const linkResult = document.getElementById('linkResult');
-        const generatedLinkInput = document.getElementById('generatedLinkInput');
-        const copyBtn = document.getElementById('copyBtn');
-        const testBtn = document.getElementById('testBtn');
-        const historyList = document.getElementById('historyList');
+      <h1 id="accessStatus" class="text-xl font-bold mb-3 text-center text-tech-primary">链接有效</h1>
+      <p id="accessDesc" class="text-center text-tech-light/70 mb-4 text-sm">正在跳转到目标内容...</p>
 
-        // 生成历史管理
-        let linkHistory = JSON.parse(localStorage.getItem(STORAGE_KEYS.linkHistory) || '[]');
+      <a id="targetLink" href="" target="_blank" class="target-link block text-center bg-gradient-to-r from-tech-primary to-tech-secondary text-white py-3 px-6 rounded-lg shadow-lg shadow-tech-primary/20 hover:shadow-tech-primary/40 transition-all duration-300 mb-4 transform hover:-translate-y-0.5 active:translate-y-0 text-sm">
+        打开目标内容
+      </a>
 
-        // 初始化：渲染历史记录
-        renderHistory();
+      <div class="info bg-tech-gray/30 rounded-lg p-4 text-sm">
+        <div class="flex justify-between mb-2">
+          <span class="text-tech-light/60">剩余访问次数:</span>
+          <span id="remainingViews" class="text-tech-accent">2次</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-tech-light/60">剩余有效时间:</span>
+          <span id="remainingTime" class="text-tech-accent">约4分钟</span>
+        </div>
+      </div>
+    </div>
+  </div>
 
-        // 生成新链接按钮点击事件
-        generateBtn.addEventListener('click', () => {
-            // 生成唯一链接ID（时间戳+随机数，确保不重复）
-            const linkId = `link_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-            
-            // 生成可访问的链接（当前页面URL+?id=linkId）
-            const currentUrl = window.location.href.split('?')[0];
-            const generatedLink = `${currentUrl}?id=${linkId}`;
+  <!-- 二维码模态框 -->
+  <div id="qrModal" class="fixed inset-0 bg-tech-dark/80 backdrop-blur-sm flex items-center justify-center z-50 opacity-0 pointer-events-none transition-opacity duration-300">
+    <div class="bg-tech-gray rounded-xl p-6 max-w-xs w-full mx-4 transform transition-transform duration-300 scale-95 modal-content">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-medium text-base">链接二维码</h3>
+        <button id="closeQrModal" class="text-tech-light/50 hover:text-tech-light text-sm">
+          <i class="fa fa-times"></i>
+        </button>
+      </div>
+      <div class="bg-white p-4 rounded-lg flex justify-center mb-4">
+        <div id="qrCodeContainer" class="w-56 h-56"></div>
+      </div>
+      <p class="text-center text-xs text-tech-light/60">扫描二维码访问链接</p>
+    </div>
+  </div>
 
-            // 初始化链接数据（创建时间、访问次数）
-            const linkData = {
-                linkId,
-                generatedLink,
-                createTime: new Date().getTime(),
-                views: 0,
-                isExpired: false
-            };
+  <!-- 复制辅助提示元素 -->
+  <div id="copyHint" class="copy-hint">按 Ctrl+C 复制，然后按 Esc</div>
 
-            // 保存链接数据到本地存储
-            localStorage.setItem(`${STORAGE_KEYS.linkDataPrefix}${linkId}`, JSON.stringify(linkData));
-
-            // 添加到历史记录
-            linkHistory.unshift(linkData); // 插入到开头
-            saveHistory();
-            renderHistory();
-
-            // 显示生成结果
-            generatedLinkInput.value = generatedLink;
-            linkResult.style.display = 'block';
-        });
-
-        // 复制链接按钮点击事件
-        copyBtn.addEventListener('click', () => {
-            generatedLinkInput.select();
-            document.execCommand('copy');
-            alert('链接已复制到剪贴板！');
-        });
-
-        // 测试链接按钮点击事件
-        testBtn.addEventListener('click', () => {
-            window.open(generatedLinkInput.value, '_blank');
-        });
-
-        // 保存历史记录到本地存储
-        function saveHistory() {
-            localStorage.setItem(STORAGE_KEYS.linkHistory, JSON.stringify(linkHistory));
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+  <script>
+    // 全局变量存储确认操作的回调函数
+    let confirmCallback = null;
+    
+    // 通知功能
+    const notification = document.getElementById('notification');
+    const notificationText = document.getElementById('notificationText');
+    const notificationAction = document.getElementById('notificationAction');
+    const copyHint = document.getElementById('copyHint');
+    const customConfirm = document.getElementById('customConfirm');
+    const confirmMessage = document.getElementById('confirmMessage');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const confirmActionBtn = document.getElementById('confirmActionBtn');
+    
+    // 初始化自定义确认对话框事件
+    function initConfirmDialog() {
+      cancelBtn.addEventListener('click', () => {
+        customConfirm.classList.remove('show');
+        confirmCallback = null;
+      });
+      
+      confirmActionBtn.addEventListener('click', () => {
+        if (typeof confirmCallback === 'function') {
+          confirmCallback();
         }
+        customConfirm.classList.remove('show');
+        confirmCallback = null;
+      });
+      
+      // 点击对话框外部关闭
+      customConfirm.addEventListener('click', (e) => {
+        if (e.target === customConfirm) {
+          customConfirm.classList.remove('show');
+          confirmCallback = null;
+        }
+      });
+    }
+    
+    // 显示自定义确认对话框
+    function showConfirm(message, callback) {
+      confirmMessage.textContent = message;
+      confirmCallback = callback;
+      customConfirm.classList.add('show');
+    }
+    
+    function showNotification(message, type = 'info', actionText = '', actionCallback = null) {
+      notificationText.textContent = message;
+      notification.className = 'notification ' + type;
+      
+      // 处理通知动作按钮
+      if (actionText && actionCallback) {
+        notificationAction.textContent = actionText;
+        notificationAction.classList.remove('hidden');
+        
+        // 移除之前的事件监听器
+        notificationAction.removeEventListener('click', handleNotificationAction);
+        
+        // 添加新的事件监听器
+        function handleNotificationAction() {
+          actionCallback();
+          notification.classList.remove('show');
+          notificationAction.classList.add('hidden');
+        }
+        
+        notificationAction.addEventListener('click', handleNotificationAction);
+      } else {
+        notificationAction.classList.add('hidden');
+      }
+      
+      notification.classList.add('show');
+      
+      // 自动隐藏，除非有交互按钮
+      if (!actionText) {
+        setTimeout(() => {
+          notification.classList.remove('show');
+        }, 3000);
+      }
+    }
 
-        // 渲染历史记录
-        function renderHistory() {
-            if (linkHistory.length === 0) {
-                historyList.innerHTML = '<div class="empty-hint">暂无生成记录</div>';
-                return;
-            }
+    // 密码验证相关元素
+    const passwordModal = document.getElementById('passwordModal');
+    const toolPasswordInput = document.getElementById('toolPassword');
+    const verifyPasswordBtn = document.getElementById('verifyPasswordBtn');
+    const passwordError = document.getElementById('passwordError');
+    
+    // 受保护的元素
+    const protectedInputs = [
+      document.getElementById('originalLink'),
+      document.getElementById('expireMinutes'),
+      document.getElementById('maxViews'),
+      document.getElementById('generatedLinkInput')
+    ];
+    
+    const protectedButtons = [
+      document.getElementById('generateBtn'),
+      document.getElementById('copyBtn'),
+      document.getElementById('testBtn'),
+      document.getElementById('qrBtn'),
+      document.getElementById('clearHistory')
+    ];
 
-            let html = '';
-            linkHistory.forEach(item => {
-                // 计算剩余时间和状态
-                const currentTime = new Date().getTime();
-                const expireTime = item.createTime + (CONFIG.expireMinutes * 60 * 1000);
-                const remainingTime = Math.ceil((expireTime - currentTime) / 60000);
-                const remainingViews = CONFIG.maxViews - item.views;
-                const isExpired = remainingTime <= 0 || remainingViews <= 0;
+    // 密码验证功能
+    verifyPasswordBtn.addEventListener('click', verifyPassword);
+    toolPasswordInput.addEventListener('keypress', (e) => {
+      // 支持回车键验证
+      if (e.key === 'Enter') {
+        verifyPassword();
+      }
+    });
 
-                // 更新状态（如果已过期）
-                if (!item.isExpired && isExpired) {
-                    item.isExpired = true;
-                    saveHistory();
-                }
+    // 验证密码函数
+    function verifyPassword() {
+      const password = toolPasswordInput.value.trim();
+      
+      if (password === '007') {
+        // 密码正确，解锁工具
+        passwordError.classList.add('hidden');
+        
+        // 隐藏密码弹窗（带动画）
+        passwordModal.style.opacity = '0';
+        setTimeout(() => {
+          passwordModal.style.display = 'none';
+          
+          // 显示生成器页面
+          document.getElementById('generator-page').style.opacity = '1';
+          document.getElementById('generator-page').style.pointerEvents = 'auto';
+          
+          // 解锁所有受保护的元素
+          unlockProtectedElements();
+        }, 300);
+      } else {
+        // 密码错误，显示错误信息
+        passwordError.classList.remove('hidden');
+        
+        // 添加错误动画效果
+        toolPasswordInput.classList.add('border-red-500', 'animate-shake');
+        setTimeout(() => {
+          toolPasswordInput.classList.remove('border-red-500', 'animate-shake');
+        }, 1000);
+      }
+    }
 
-                // 状态文本和样式
-                const statusText = isExpired ? '已失效' : '生效中';
-                const statusClass = isExpired ? 'status-expired' : 'status-active';
+    // 解锁受保护的元素 - 关键修复：确保正确移除禁用状态
+    function unlockProtectedElements() {
+      // 解锁输入框
+      protectedInputs.forEach(input => {
+        input.classList.remove('input-disabled');
+        input.disabled = false;
+        // 确保移除disabled属性
+        input.removeAttribute('disabled');
+      });
+      
+      // 解锁按钮 - 关键修复：确保正确移除禁用状态和样式
+      protectedButtons.forEach(button => {
+        button.classList.remove('btn-disabled');
+        button.disabled = false;
+        // 确保移除disabled属性
+        button.removeAttribute('disabled');
+        
+        // 为清空历史按钮添加额外的激活状态样式
+        if (button.id === 'clearHistory') {
+          button.classList.add('hover:bg-red-500/20', 'hover:text-red-400', 'transition-all');
+        }
+      });
+    }
 
-                // 时间格式化
-                const createTimeStr = new Date(item.createTime).toLocaleString();
+    // 核心配置
+    const CONFIG = {
+      expireMinutes: 5, // 默认有效期（分钟）
+      maxViews: 3 // 默认最大打开次数
+    };
 
-                html += `
-                    <div class="history-item">
-                        <div class="link-info">
-                            <strong>${item.generatedLink}</strong>
-                            <p>生成时间：${createTimeStr} | 访问次数：${item.views}/${CONFIG.maxViews}</p>
-                        </div>
-                        <span class="link-status ${statusClass}">${statusText}</span>
-                    </div>
-                `;
+    // 存储键名
+    const STORAGE_KEYS = {
+      linkHistory: "wechatLinkHistory", // 转发历史
+      linkDataPrefix: "wechatLinkData_" // 单个链接的数据前缀
+    };
+
+    // 页面元素
+    const generatorPage = document.getElementById('generator-page');
+    const accessPage = document.getElementById('access-page');
+    const generateBtn = document.getElementById('generateBtn');
+    const linkResult = document.getElementById('linkResult');
+    const generatedLinkInput = document.getElementById('generatedLinkInput');
+    const copyBtn = document.getElementById('copyBtn');
+    const testBtn = document.getElementById('testBtn');
+    const qrBtn = document.getElementById('qrBtn');
+    const qrModal = document.getElementById('qrModal');
+    const closeQrModal = document.getElementById('closeQrModal');
+    const qrCodeContainer = document.getElementById('qrCodeContainer');
+    const historyList = document.getElementById('historyList');
+    const clearHistory = document.getElementById('clearHistory');
+    const expireMinutesInput = document.getElementById('expireMinutes');
+    const maxViewsInput = document.getElementById('maxViews');
+    const originalLink = document.getElementById('originalLink');
+    const targetLink = document.getElementById('targetLink');
+    const statusIcon = document.getElementById('statusIcon');
+    const accessStatus = document.getElementById('accessStatus');
+    const accessDesc = document.getElementById('accessDesc');
+    const remainingViews = document.getElementById('remainingViews');
+    const remainingTime = document.getElementById('remainingTime');
+
+    // 生成历史管理
+    let linkHistory = JSON.parse(localStorage.getItem(STORAGE_KEYS.linkHistory) || '[]');
+
+    // 初始化：渲染历史记录
+    renderHistory();
+    
+    // 初始化确认对话框
+    initConfirmDialog();
+
+    // 更新配置值
+    expireMinutesInput.addEventListener('change', (e) => {
+      CONFIG.expireMinutes = parseInt(e.target.value) || 5;
+    });
+
+    maxViewsInput.addEventListener('change', (e) => {
+      CONFIG.maxViews = parseInt(e.target.value) || 3;
+    });
+
+    // 生成转发链接按钮点击事件
+    generateBtn.addEventListener('click', () => {
+      // 验证原始链接是否填写
+      const inputValue = originalLink.value.trim();
+      if (inputValue === '') {
+        showNotification('请输入要转发的链接', 'error');
+        return;
+      }
+      
+      // 生成唯一链接ID（时间戳+随机数，确保不重复）
+      const linkId = `wechatLink_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+      
+      // 生成可访问的链接（当前页面URL+?id=linkId）
+      const currentUrl = window.location.href.split('?')[0];
+      const generatedLink = `${currentUrl}?id=${linkId}`;
+      
+      // 初始化链接数据
+      const linkData = {
+        linkId,
+        generatedLink,
+        originalLink: inputValue,
+        createTime: new Date().getTime(),
+        expireMinutes: CONFIG.expireMinutes,
+        maxViews: CONFIG.maxViews,
+        currentViews: 0,
+        expiresAt: new Date().getTime() + (CONFIG.expireMinutes * 60 * 1000)
+      };
+      
+      // 保存链接数据到localStorage
+      localStorage.setItem(`${STORAGE_KEYS.linkDataPrefix}${linkId}`, JSON.stringify(linkData));
+      
+      // 添加到历史记录
+      linkHistory.unshift({
+        linkId,
+        generatedLink,
+        originalLink: inputValue,
+        createTime: new Date().getTime(),
+        expireMinutes: CONFIG.expireMinutes,
+        maxViews: CONFIG.maxViews
+      });
+      
+      // 限制历史记录数量为20条
+      if (linkHistory.length > 20) {
+        linkHistory = linkHistory.slice(0, 20);
+      }
+      
+      // 保存历史记录
+      localStorage.setItem(STORAGE_KEYS.linkHistory, JSON.stringify(linkHistory));
+      
+      // 更新UI
+      generatedLinkInput.value = generatedLink;
+      linkResult.classList.add('show');
+      renderHistory();
+      
+      // 生成二维码
+      generateQRCode(generatedLink);
+      
+      showNotification('转发链接生成成功', 'success');
+    });
+
+    // 手动复制方法 - 用于通知栏的操作
+    function manualCopy(text) {
+      // 创建一个临时输入框
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.top = '0';
+      textarea.style.left = '0';
+      textarea.style.opacity = '0.01'; // 几乎透明但仍可选中
+      document.body.appendChild(textarea);
+      
+      // 选中内容
+      textarea.select();
+      textarea.setSelectionRange(0, text.length); // 移动设备兼容
+      
+      // 显示复制提示
+      const rect = textarea.getBoundingClientRect();
+      copyHint.style.left = `${rect.left + window.scrollX}px`;
+      copyHint.style.top = `${rect.top + window.scrollY - 30}px`;
+      copyHint.style.opacity = '1';
+      
+      // 监听按键
+      function handleKeydown(e) {
+        if (e.key === 'Escape') {
+          cleanup();
+        } else if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+          // 复制成功
+          setTimeout(() => {
+            showNotification('链接已复制到剪贴板', 'success');
+            cleanup();
+          }, 300);
+        }
+      }
+      
+      document.addEventListener('keydown', handleKeydown);
+      
+      // 清理函数
+      function cleanup() {
+        document.body.removeChild(textarea);
+        copyHint.style.opacity = '0';
+        document.removeEventListener('keydown', handleKeydown);
+      }
+    }
+
+    // 增强的复制功能
+    function copyToClipboard(text) {
+      // 尝试多种复制方法，返回Promise
+      return new Promise((resolve) => {
+        // 方法1: 使用Clipboard API（现代浏览器）
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(text)
+            .then(() => resolve(true))
+            .catch(err => {
+              console.log('Clipboard API 失败:', err);
+              // 尝试方法2
+              tryMethod2();
             });
-
-            historyList.innerHTML = html;
+        } else {
+          // 直接尝试方法2
+          tryMethod2();
         }
+        
+        // 方法2: 使用execCommand
+        function tryMethod2() {
+          const textarea = document.createElement('textarea');
+          textarea.value = text;
+          textarea.style.position = 'fixed';
+          textarea.style.opacity = '0';
+          document.body.appendChild(textarea);
+          textarea.select();
+          
+          try {
+            const successful = document.execCommand('copy');
+            document.body.removeChild(textarea);
+            resolve(successful);
+          } catch (err) {
+            console.log('execCommand 失败:', err);
+            document.body.removeChild(textarea);
+            // 尝试方法3
+            tryMethod3();
+          }
+        }
+        
+        // 方法3: 使用Selection API
+        function tryMethod3() {
+          const selection = window.getSelection();
+          const range = document.createRange();
+          const div = document.createElement('div');
+          div.textContent = text;
+          div.style.position = 'fixed';
+          div.style.opacity = '0';
+          document.body.appendChild(div);
+          
+          range.selectNodeContents(div);
+          selection.removeAllRanges();
+          selection.addRange(range);
+          
+          try {
+            const successful = document.execCommand('copy');
+            selection.removeAllRanges();
+            document.body.removeChild(div);
+            resolve(successful);
+          } catch (err) {
+            console.log('Selection API 失败:', err);
+            selection.removeAllRanges();
+            document.body.removeChild(div);
+            resolve(false);
+          }
+        }
+      });
+    }
 
-        // 处理访问链接（当URL带?id参数时）
-        function handleAccessLink() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const linkId = urlParams.get('id');
+    // 复制按钮点击事件
+    copyBtn.addEventListener('click', () => {
+      const textToCopy = generatedLinkInput.value;
+      if (!textToCopy) {
+        showNotification('没有可复制的内容', 'error');
+        return;
+      }
+      
+      const originalText = copyBtn.innerHTML;
+      
+      // 移除之前可能存在的抖动类
+      generatedLinkInput.classList.remove('animate-shake');
+      
+      copyToClipboard(textToCopy)
+        .then(success => {
+          if (success) {
+            copyBtn.innerHTML = '<i class="fa fa-check mr-1"></i>已复制';
+            showNotification('链接已复制到剪贴板', 'success');
+          } else {
+            // 复制失败时添加抖动效果并提供手动复制选项
+            generatedLinkInput.classList.add('animate-shake');
+            setTimeout(() => {
+              generatedLinkInput.classList.remove('animate-shake');
+            }, 1000);
             
-            if (!linkId) return; // 没有id参数，显示生成器页面
+            // 显示带有手动复制选项的通知
+            showNotification(
+              '复制失败，尝试手动复制', 
+              'error', 
+              '手动复制', 
+              () => manualCopy(textToCopy)
+            );
+          }
+          
+          // 恢复按钮原始文本
+          setTimeout(() => {
+            copyBtn.innerHTML = originalText;
+          }, 2000);
+        });
+    });
 
-            // 获取链接数据
-            const linkDataStr = localStorage.getItem(`${STORAGE_KEYS.linkDataPrefix}${linkId}`);
-            if (!linkDataStr) {
-                // 链接不存在
-                showAccessPage(false, '链接不存在或已被删除', '');
-                return;
-            }
-
-            const linkData = JSON.parse(linkDataStr);
-            const currentTime = new Date().getTime();
-            const expireTime = linkData.createTime + (CONFIG.expireMinutes * 60 * 1000);
-            const remainingTime = Math.ceil((expireTime - currentTime) / 60000);
-            const remainingViews = CONFIG.maxViews - linkData.views;
-
-            // 检查是否失效
-            if (remainingTime <= 0 || remainingViews <= 0) {
-                showAccessPage(false, '该链接已超过有效时间或最大访问次数', '');
-                // 更新历史记录中的状态
-                updateHistoryStatus(linkId, true);
-                return;
-            }
-
-            // 更新访问次数
-            linkData.views++;
-            localStorage.setItem(`${STORAGE_KEYS.linkDataPrefix}${linkId}`, JSON.stringify(linkData));
-
-            // 更新历史记录中的访问次数
-            updateHistoryViews(linkId, linkData.views);
-
-            // 显示有效页面
-            const infoText = `剩余访问次数：${remainingViews - 1}次 / 剩余有效时间：约${remainingTime}分钟`;
-            showAccessPage(true, '', infoText);
+    // 历史记录中的复制按钮事件委托
+    historyList.addEventListener('click', (e) => {
+      if (e.target.closest('.copy-history-link')) {
+        const btn = e.target.closest('.copy-history-link');
+        const link = btn.getAttribute('data-link');
+        if (link) {
+          const originalIcon = btn.innerHTML;
+          
+          copyToClipboard(link)
+            .then(success => {
+              if (success) {
+                btn.innerHTML = '<i class="fa fa-check"></i> 已复制';
+                showNotification('链接已复制到剪贴板', 'success');
+              } else {
+                // 为历史记录项添加抖动效果
+                btn.closest('.history-item').classList.add('animate-shake');
+                setTimeout(() => {
+                  btn.closest('.history-item').classList.remove('animate-shake');
+                }, 1000);
+                
+                // 显示带有手动复制选项的通知
+                showNotification(
+                  '复制失败，尝试手动复制', 
+                  'error', 
+                  '手动复制', 
+                  () => manualCopy(link)
+                );
+              }
+              
+              setTimeout(() => {
+                btn.innerHTML = originalIcon;
+              }, 2000);
+            });
         }
+      }
+    });
 
-        // 显示访问页面
-        function showAccessPage(isValid, desc, info) {
-            generatorPage.style.display = 'none';
-            accessPage.style.display = 'block';
+    // 测试链接按钮点击事件
+    testBtn.addEventListener('click', () => {
+      const link = generatedLinkInput.value;
+      if (link) {
+        window.open(link, '_blank');
+      } else {
+        showNotification('请先生成转发链接', 'error');
+      }
+    });
 
-            const accessStatus = document.getElementById('accessStatus');
-            const accessDesc = document.getElementById('accessDesc');
-            const accessInfo = document.getElementById('accessInfo');
-            const targetLink = document.getElementById('targetLink');
+    // 二维码按钮点击事件
+    qrBtn.addEventListener('click', () => {
+      const link = generatedLinkInput.value;
+      if (link) {
+        generateQRCode(link);
+        qrModal.classList.add('modal-show');
+      } else {
+        showNotification('请先生成转发链接', 'error');
+      }
+    });
 
-            if (isValid) {
-                accessStatus.className = 'valid';
-                accessStatus.textContent = '链接有效';
-                accessDesc.textContent = '点击下方链接访问内容';
-                targetLink.style.display = 'inline-block';
-                accessInfo.textContent = info;
-            } else {
-                accessStatus.className = 'invalid';
-                accessStatus.textContent = '链接已失效';
-                accessDesc.textContent = desc;
-                targetLink.style.display = 'none';
-                accessInfo.textContent = `有效期：${CONFIG.expireMinutes}分钟 / 最大访问：${CONFIG.maxViews}次`;
-            }
+    // 关闭二维码模态框
+    closeQrModal.addEventListener('click', () => {
+      qrModal.classList.remove('modal-show');
+    });
+
+    // 清空历史记录按钮点击事件 - 关键修复：使用自定义确认对话框
+    clearHistory.addEventListener('click', () => {
+      // 检查是否有历史记录
+      if (linkHistory.length === 0) {
+        showNotification('没有可清空的历史记录', 'info');
+        return;
+      }
+      
+      // 使用自定义确认对话框替代浏览器默认confirm
+      showConfirm('确定要清空所有转发历史记录吗？此操作不可恢复。', () => {
+        // 清除localStorage中的所有数据
+        linkHistory.forEach(item => {
+          localStorage.removeItem(`${STORAGE_KEYS.linkDataPrefix}${item.linkId}`);
+        });
+        localStorage.removeItem(STORAGE_KEYS.linkHistory);
+        linkHistory = [];
+        renderHistory();
+        showNotification('历史记录已清空', 'success');
+      });
+    });
+
+    // 生成二维码
+    function generateQRCode(text) {
+      qrCodeContainer.innerHTML = '';
+      QRCode.toCanvas(text, {
+        width: 224,
+        margin: 1,
+        color: {
+          dark: "#0F172A",
+          light: "#ffffff"
         }
-
-        // 更新历史记录中的访问次数
-        function updateHistoryViews(linkId, views) {
-            const index = linkHistory.findIndex(item => item.linkId === linkId);
-            if (index !== -1) {
-                linkHistory[index].views = views;
-                saveHistory();
-                renderHistory();
-            }
+      }, function(error, canvas) {
+        if (error) {
+          console.error(error);
+          showNotification('生成二维码失败', 'error');
         }
-
-        // 更新历史记录中的状态
-        function updateHistoryStatus(linkId, isExpired) {
-            const index = linkHistory.findIndex(item => item.linkId === linkId);
-            if (index !== -1) {
-                linkHistory[index].isExpired = isExpired;
-                saveHistory();
-                renderHistory();
-            }
+        if (canvas) {
+          qrCodeContainer.appendChild(canvas);
         }
+      });
+    }
 
-        // 初始化：检查是否是访问链接
-        handleAccessLink();
-    </script>
-</body>
-</html>
+    // 渲染历史记录
+    function renderHistory() {
+      if (linkHistory.length === 0) {
+        historyList.innerHTML = `
+          <div class="empty-hint text-center py-10 text-tech-light/50">
+            <div class="w-16 h-16 mx-auto mb-4 text-tech-light/20">
+              <i class="fa fa-folder-open-o text-3xl"></i>
+            </div>
+            <p class="text-base">暂无转发记录，生成链接后将显示在此处</p>
+          </div>
+        `;
+        
+        // 当没有历史记录时禁用清空按钮
+        if (!clearHistory.disabled) {
+          clearHistory.disabled = true;
+          clearHistory.classList.add('btn-disabled');
+        }
+        return;
+      }
+      
+      // 有历史记录时确保清空按钮已启用
+      if (clearHistory.disabled) {
+        clearHistory.disabled = false;
+        clearHistory.classList.remove('btn-disabled');
+        clearHistory.classList.add('hover:bg-red-500/20', 'hover:text-red-400', 'transition-all');
+      }
+      
+      let historyHTML = '';
+      linkHistory.forEach(item => {
+        const createDate = new Date(item.createTime);
+        const formattedTime = `${createDate.getHours().toString().padStart(2, '0')}:${createDate.getMinutes().toString().padStart(2, '0')}`;
+        
+        historyHTML += `
+          <div class="history-item bg-tech-gray/30 rounded-lg p-3 mb-3 hover:bg-tech-gray/40 transition-colors">
+            <div class="flex justify-between items-start mb-2">
+              <div class="text-sm truncate max-w-[70%]">${item.originalLink}</div>
+              <div class="text-tech-light/50 text-xs">${formattedTime}</div>
+            </div>
+            <div class="flex justify-between items-center text-xs">
+              <div class="flex items-center text-tech-light/70">
+                <i class="fa fa-clock-o mr-1 text-tech-accent/70"></i>${item.expireMinutes}分钟
+                <span class="mx-1.5">•</span>
+                <i class="fa fa-eye mr-1 text-tech-accent/70"></i>${item.maxViews}次
+              </div>
+              <button class="copy-history-link text-tech-primary hover:text-tech-primary/80 transition-colors p-1" data-link="${item.generatedLink}">
+                <i class="fa fa-copy"></i> 复制
+              </button>
+            </div>
+          </div>
+        `;
+      });
+      
+      historyList.innerHTML = historyHTML;
+    }
+
+    // 处理链接访问
+    function handleLinkAccess() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const linkId = urlParams.get('id');
+      
+      if (!linkId) {
+        // 没有ID参数，显示生成器页面
+        generatorPage.classList.remove('hidden');
+        accessPage.classList.add('hidden');
+        return;
+      }
+      
+      // 有ID参数，尝试加载链接数据
+      const linkDataStr = localStorage.getItem(`${STORAGE_KEYS.linkDataPrefix}${linkId}`);
+      
+      if (!linkDataStr) {
+        // 链接数据不存在或已过期
+        generatorPage.classList.add('hidden');
+        accessPage.classList.remove('hidden');
+        statusIcon.innerHTML = '<i class="fa fa-exclamation-triangle text-yellow-500 text-2xl"></i>';
+        statusIcon.className = 'w-16 h-16 mx-auto mb-5 rounded-full bg-yellow-500/20 flex items-center justify-center';
+        accessStatus.textContent = '链接不存在';
+        accessStatus.className = 'text-xl font-bold mb-3 text-center text-yellow-500';
+        accessDesc.textContent = '该链接可能已过期或从未存在';
+        targetLink.textContent = '返回生成器';
+        targetLink.href = window.location.href.split('?')[0];
+        document.querySelector('.info').style.display = 'none';
+        return;
+      }
+      
+      const linkData = JSON.parse(linkDataStr);
+      const now = new Date().getTime();
+      
+      // 检查链接是否过期
+      if (now > linkData.expiresAt) {
+        generatorPage.classList.add('hidden');
+        accessPage.classList.remove('hidden');
+        statusIcon.innerHTML = '<i class="fa fa-times text-red-500 text-2xl"></i>';
+        statusIcon.className = 'w-16 h-16 mx-auto mb-5 rounded-full bg-red-500/20 flex items-center justify-center';
+        accessStatus.textContent = '链接已过期';
+        accessStatus.className = 'text-xl font-bold mb-3 text-center text-red-500';
+        accessDesc.textContent = '该链接的有效时间已过';
+        targetLink.textContent = '返回生成器';
+        targetLink.href = window.location.href.split('?')[0];
+        document.querySelector('.info').style.display = 'none';
+        return;
+      }
+      
+      // 检查访问次数是否已达上限
+      if (linkData.currentViews >= linkData.maxViews) {
+        generatorPage.classList.add('hidden');
+        accessPage.classList.remove('hidden');
+        statusIcon.innerHTML = '<i class="fa fa-times text-red-500 text-2xl"></i>';
+        statusIcon.className = 'w-16 h-16 mx-auto mb-5 rounded-full bg-red-500/20 flex items-center justify-center';
+        accessStatus.textContent = '访问次数已达上限';
+        accessStatus.className = 'text-xl font-bold mb-3 text-center text-red-500';
+        accessDesc.textContent = '该链接的最大访问次数已用尽';
+        targetLink.textContent = '返回生成器';
+        targetLink.href = window.location.href.split('?')[0];
+        document.querySelector('.info').style.display = 'none';
+        return;
+      }
+      
+      // 链接有效，更新访问次数
+      linkData.currentViews++;
+      localStorage.setItem(`${STORAGE_KEYS.linkDataPrefix}${linkId}`, JSON.stringify(linkData));
+      
+      // 显示访问页面
+      generatorPage.classList.add('hidden');
+      accessPage.classList.remove('hidden');
+      targetLink.href = linkData.originalLink;
+      
+      // 计算剩余时间（分钟）
+      const remainingMinutes = Math.ceil((linkData.expiresAt - now) / (60 * 1000));
+      remainingTime.textContent = `约${remainingMinutes}分钟`;
+      
+      // 计算剩余访问次数
+      const remainingViewsCount = linkData.maxViews - linkData.currentViews;
+      remainingViews.textContent = `${remainingViewsCount}次`;
+      
+      // 3秒后自动跳转
+      let countdown = 3;
+      const countdownInterval = setInterval(() => {
+        countdown--;
+        accessDesc.textContent = `将在${countdown}秒后自动跳转到目标内容...`;
+        
+        if (countdown <= 0) {
+          clearInterval(countdownInterval);
+          window.location.href = linkData.originalLink;
+        }
+      }, 1000);
+    }
+
+    // 页面加载时处理链接访问
+    window.addEventListener('DOMContentLoaded', handleLinkAccess);
+  </script>
+
+</body></html>
