@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>建议收集</title>
+    <title>临时链接生成工具</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <script>
@@ -208,6 +208,15 @@
                             </div>
                         </div>
 
+                        <!-- 建议收集选项（默认勾选） -->
+                        <div class="pt-2">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="collect-feedback" name="collect-feedback" 
+                                    class="w-5 h-5 text-primary focus:ring-primary border-gray-300 rounded transition-custom" checked>
+                                <span class="ml-2 text-sm font-medium text-gray-700">访问前收集建议（区服、昵称、建议内容）</span>
+                            </label>
+                        </div>
+
                         <button type="submit" id="generate-btn"
                             class="w-full bg-primary hover:bg-primary/90 text-white font-medium py-3 px-4 rounded-lg transition-custom flex items-center justify-center group">
                             <i class="fa fa-magic mr-2"></i>
@@ -244,7 +253,11 @@
                                 <span>最大访问次数: <span id="link-views" class="font-medium"></span></span>
                             </div>
                         </div>
-                        <div class="mt-3 text-sm text-gray-500">
+                        <div id="feedback-indicator" class="mt-3 text-sm text-gray-500 hidden">
+                            <i class="fa fa-comment-o text-primary mr-1"></i>
+                            <span>此链接访问前需要填写建议信息</span>
+                        </div>
+                        <div id="no-feedback-indicator" class="mt-3 text-sm text-gray-500">
                             <i class="fa fa-info-circle text-primary mr-1"></i>
                             <span>此链接无需密码即可访问</span>
                         </div>
@@ -275,6 +288,27 @@
                         <div id="history-list" class="divide-y divide-gray-100 hidden"></div>
                     </div>
                 </div>
+
+                <!-- 建议反馈列表 -->
+                <div class="mt-8">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold flex items-center">
+                            <i class="fa fa-comments text-primary mr-2"></i>
+                            收集到的建议
+                        </h3>
+                        <button id="export-feedback" class="text-sm text-green-600 hover:text-green-700 flex items-center transition-custom opacity-70 hover:opacity-100 hidden">
+                            <i class="fa fa-download mr-1"></i>
+                            <span>导出全部</span>
+                        </button>
+                    </div>
+                    <div id="feedback-container" class="bg-white rounded-2xl shadow-lg overflow-hidden">
+                        <div id="feedback-empty" class="p-8 text-center text-gray-500">
+                            <i class="fa fa-comment-o text-4xl mb-3 opacity-50"></i>
+                            <p>暂无收集到的建议</p>
+                        </div>
+                        <div id="feedback-list" class="divide-y divide-gray-100 hidden"></div>
+                    </div>
+                </div>
             </div>
         </main>
 
@@ -289,10 +323,52 @@
 
     <!-- 链接展示页面 (访问生成的链接时显示) -->
     <div id="link-screen" class="hidden min-h-screen flex flex-col">
-        <div id="link-content-container" class="flex-grow container mx-auto px-4 py-8 flex items-center justify-center">
+        <!-- 建议收集表单 -->
+        <div id="feedback-form-container" class="flex-grow container mx-auto px-4 py-8 flex items-center justify-center">
+            <div class="w-full max-w-md bg-white rounded-2xl shadow-lg p-6 transform transition-all duration-300 hover:shadow-xl">
+                <div class="text-center mb-6">
+                    <i class="fa fa-comments text-4xl text-primary mb-3"></i>
+                    <h2 class="text-2xl font-bold">请提供您的建议</h2>
+                    <p class="text-gray-600 mt-2">填写以下信息后即可查看内容</p>
+                </div>
+                
+                <form id="feedback-form" class="space-y-4">
+                    <div>
+                        <label for="server" class="block text-sm font-medium text-gray-700 mb-1">区服</label>
+                        <input type="text" id="server" name="server" 
+                            class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-primary transition-custom outline-none"
+                            placeholder="请输入您的区服" required>
+                    </div>
+                    
+                    <div>
+                        <label for="nickname" class="block text-sm font-medium text-gray-700 mb-1">昵称</label>
+                        <input type="text" id="nickname" name="nickname" 
+                            class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-primary transition-custom outline-none"
+                            placeholder="请输入您的昵称" required>
+                    </div>
+                    
+                    <div>
+                        <label for="feedback" class="block text-sm font-medium text-gray-700 mb-1">建议内容</label>
+                        <textarea id="feedback" name="feedback" rows="4"
+                            class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-primary transition-custom outline-none"
+                            placeholder="请输入您的建议或反馈..." required></textarea>
+                    </div>
+                    
+                    <button type="submit" id="submit-feedback"
+                        class="w-full bg-primary hover:bg-primary/90 text-white font-medium py-3 px-4 rounded-lg transition-custom flex items-center justify-center group">
+                        <span>提交并查看内容</span>
+                        <i class="fa fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- 目标内容展示区 -->
+        <div id="link-content-container" class="flex-grow container mx-auto px-4 py-8 flex items-center justify-center hidden">
             <!-- 内容将通过JS动态插入 -->
         </div>
         
+        <!-- 链接失效提示 -->
         <div id="expired-message" class="hidden flex-grow container mx-auto px-4 py-8 flex flex-col items-center justify-center text-center">
             <div class="max-w-md">
                 <div class="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -309,6 +385,7 @@
         const appState = {
             HISTORY_KEY: 'tempLinkHistory',
             LINK_DATA_KEY: 'tempLinkData',
+            FEEDBACK_KEY: 'linkFeedbackData',
             
             // 获取所有链接数据
             get linkDatabase() {
@@ -319,6 +396,17 @@
             // 保存链接数据
             set linkDatabase(value) {
                 localStorage.setItem(this.LINK_DATA_KEY, JSON.stringify(value));
+            },
+            
+            // 获取所有建议反馈
+            get feedbackDatabase() {
+                const data = localStorage.getItem(this.FEEDBACK_KEY);
+                return data ? JSON.parse(data) : [];
+            },
+            
+            // 保存建议反馈
+            set feedbackDatabase(value) {
+                localStorage.setItem(this.FEEDBACK_KEY, JSON.stringify(value));
             },
             
             currentView: 'password' // password, tool, link
@@ -415,8 +503,9 @@
                         toolScreen.classList.remove('hidden');
                         toolScreen.classList.add('animate-fadeIn');
                         
-                        // 加载历史记录
+                        // 加载历史记录和建议反馈
                         loadHistory();
+                        loadFeedback();
                         appState.currentView = 'tool';
                         
                         // 重置按钮状态
@@ -452,6 +541,197 @@
             }
         }
 
+        // 保存建议反馈
+        function saveFeedback(linkId, feedbackData) {
+            try {
+                const feedbacks = appState.feedbackDatabase;
+                
+                // 添加新反馈
+                feedbacks.push({
+                    id: Date.now().toString(), // 使用时间戳作为唯一ID
+                    linkId: linkId,
+                    server: feedbackData.server,
+                    nickname: feedbackData.nickname,
+                    feedback: feedbackData.feedback,
+                    createdAt: new Date().getTime()
+                });
+                
+                // 保存到本地存储
+                appState.feedbackDatabase = feedbacks;
+                
+                // 更新反馈列表显示（如果在工具界面）
+                if (appState.currentView === 'tool') {
+                    loadFeedback();
+                }
+                
+                return true;
+            } catch (error) {
+                console.error('保存建议反馈出错:', error);
+                return false;
+            }
+        }
+
+        // 导出所有建议为CSV文件
+        function exportFeedbackToCSV() {
+            try {
+                const feedbacks = appState.feedbackDatabase;
+                
+                if (feedbacks.length === 0) {
+                    showError('没有可导出的建议数据');
+                    return;
+                }
+                
+                // 创建CSV内容
+                let csvContent = "区服,昵称,建议内容,提交时间\n";
+                
+                // 格式化日期
+                const formatDate = function(timestamp) {
+                    const date = new Date(timestamp);
+                    return date.toLocaleString();
+                };
+                
+                // 遍历所有建议
+                feedbacks.forEach(function(item) {
+                    // 处理CSV中的特殊字符（逗号、引号、换行）
+                    const server = item.server.replace(/"/g, '""');
+                    const nickname = item.nickname.replace(/"/g, '""');
+                    const feedback = item.feedback.replace(/"/g, '""').replace(/\n/g, ' ');
+                    const date = formatDate(item.createdAt);
+                    
+                    csvContent += `"${server}","${nickname}","${feedback}","${date}"\n`;
+                });
+                
+                // 创建Blob对象
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                
+                // 创建下载链接
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                
+                // 生成带日期的文件名
+                const today = new Date();
+                const dateStr = today.toISOString().split('T')[0];
+                a.download = `建议收集_${dateStr}.csv`;
+                
+                // 触发下载
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                // 释放URL对象
+                URL.revokeObjectURL(url);
+                
+                showSuccess(`成功导出 ${feedbacks.length} 条建议`);
+            } catch (error) {
+                console.error('导出建议出错:', error);
+                showError('导出建议失败，请重试');
+            }
+        }
+
+        // 加载建议反馈列表
+        function loadFeedback() {
+            try {
+                const feedbacks = appState.feedbackDatabase;
+                const feedbackEmpty = document.getElementById('feedback-empty');
+                const feedbackList = document.getElementById('feedback-list');
+                const exportButton = document.getElementById('export-feedback');
+                
+                // 显示或隐藏导出按钮
+                if (feedbacks.length > 0) {
+                    exportButton.classList.remove('hidden');
+                } else {
+                    exportButton.classList.add('hidden');
+                }
+                
+                if (feedbacks.length === 0) {
+                    feedbackEmpty.classList.remove('hidden');
+                    feedbackList.classList.add('hidden');
+                    return;
+                }
+                
+                feedbackEmpty.classList.add('hidden');
+                feedbackList.classList.remove('hidden');
+                feedbackList.innerHTML = '';
+                
+                // 格式化日期
+                const formatDate = function(timestamp) {
+                    const date = new Date(timestamp);
+                    return date.toLocaleString();
+                };
+                
+                // 获取链接信息（用于显示关联的链接）
+                const linkDatabase = appState.linkDatabase;
+                
+                // 按时间倒序排列（最新的在前面）
+                const sortedFeedbacks = [...feedbacks].sort((a, b) => b.createdAt - a.createdAt);
+                
+                // 创建反馈列表项
+                sortedFeedbacks.forEach(function(item) {
+                    // 查找关联的链接信息
+                    const linkInfo = linkDatabase[item.linkId] || { type: 'unknown' };
+                    
+                    let typeIcon = '';
+                    switch(linkInfo.type) {
+                        case 'url':
+                            typeIcon = '<i class="fa fa-globe text-blue-500 mr-1"></i>';
+                            break;
+                        case 'text':
+                            typeIcon = '<i class="fa fa-file-text-o text-green-500 mr-1"></i>';
+                            break;
+                        case 'image':
+                            typeIcon = '<i class="fa fa-image text-purple-500 mr-1"></i>';
+                            break;
+                        default:
+                            typeIcon = '<i class="fa fa-link text-gray-500 mr-1"></i>';
+                    }
+                    
+                    const feedbackItem = document.createElement('div');
+                    feedbackItem.className = 'p-4 hover:bg-gray-50 transition-custom';
+                    
+                    feedbackItem.innerHTML = `
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <div class="flex items-center mb-2">
+                                    <i class="fa fa-user text-primary mr-2"></i>
+                                    <span class="font-medium">${item.nickname}</span>
+                                    <span class="ml-2 text-xs bg-gray-100 px-2 py-0.5 rounded-full">${item.server}</span>
+                                </div>
+                                <p class="text-sm text-gray-700 mb-3">${item.feedback}</p>
+                                <div class="flex flex-wrap gap-x-4 text-xs text-gray-500">
+                                    <div>关联内容: ${typeIcon}</div>
+                                    <div>提交时间: ${formatDate(item.createdAt)}</div>
+                                </div>
+                            </div>
+                            <button class="delete-feedback-item text-gray-500 hover:text-red-500 p-1" data-id="${item.id}">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </div>
+                    `;
+                    
+                    feedbackList.appendChild(feedbackItem);
+                });
+                
+                // 添加删除反馈事件
+                document.querySelectorAll('.delete-feedback-item').forEach(function(btn) {
+                    btn.addEventListener('click', function(e) {
+                        const id = e.currentTarget.getAttribute('data-id');
+                        let feedbacks = appState.feedbackDatabase;
+                        feedbacks = feedbacks.filter(function(item) { return item.id !== id; });
+                        appState.feedbackDatabase = feedbacks;
+                        
+                        loadFeedback();
+                        showSuccess('建议已删除');
+                    });
+                });
+                
+                // 绑定导出按钮事件
+                exportButton.addEventListener('click', exportFeedbackToCSV);
+            } catch (error) {
+                console.error('加载建议反馈出错:', error);
+            }
+        }
+
         // 初始化链接生成器功能
         function initLinkGenerator() {
             // 获取DOM元素
@@ -467,6 +747,7 @@
             const imageInputContainer = document.getElementById('image-input-container');
             const expiryTimeInput = document.getElementById('expiry-time');
             const maxViewsInput = document.getElementById('max-views');
+            const collectFeedbackCheckbox = document.getElementById('collect-feedback');
             const linkForm = document.getElementById('link-form');
             const resultContainer = document.getElementById('result-container');
             const generatedLinkInput = document.getElementById('generated-link');
@@ -474,6 +755,8 @@
             const copyNotification = document.getElementById('copy-notification');
             const linkExpiryDisplay = document.getElementById('link-expiry');
             const linkViewsDisplay = document.getElementById('link-views');
+            const feedbackIndicator = document.getElementById('feedback-indicator');
+            const noFeedbackIndicator = document.getElementById('no-feedback-indicator');
             const historyEmpty = document.getElementById('history-empty');
             const historyList = document.getElementById('history-list');
             const generateBtn = document.getElementById('generate-btn');
@@ -617,6 +900,7 @@
 
                     // 获取表单数据
                     const contentType = document.querySelector('input[name="content-type"]:checked').value;
+                    const collectFeedback = collectFeedbackCheckbox.checked;
                     let content = '';
                     
                     if (contentType === 'url') {
@@ -682,6 +966,7 @@
                         expiry: expiryDate.getTime(),
                         maxViews: maxViews,
                         views: 0,
+                        collectFeedback: collectFeedback, // 是否需要收集建议
                         createdAt: new Date().getTime()
                     };
                     appState.linkDatabase = currentDatabase;
@@ -689,10 +974,19 @@
                     // 构建完整链接（指向内容页面）
                     const fullLink = `${baseUrl}?view=${linkId}`;
                     
-                    // 显示结果
+                    // 显示结果，根据是否收集建议显示不同提示
                     generatedLinkInput.value = fullLink;
                     linkExpiryDisplay.textContent = expiryTime + ' 分钟';
                     linkViewsDisplay.textContent = maxViews + ' 次';
+                    
+                    if (collectFeedback) {
+                        feedbackIndicator.classList.remove('hidden');
+                        noFeedbackIndicator.classList.add('hidden');
+                    } else {
+                        feedbackIndicator.classList.add('hidden');
+                        noFeedbackIndicator.classList.remove('hidden');
+                    }
+                    
                     resultContainer.classList.remove('hidden');
                     
                     // 添加到历史记录
@@ -708,8 +1002,10 @@
                     previewImage.classList.add('hidden');
                     imageName.classList.add('hidden');
                     imageContent.value = '';
+                    // 保持建议收集选项的状态（如果用户修改过）
+                    collectFeedbackCheckbox.checked = collectFeedback;
                     
-                    showSuccess('链接生成成功，将显示目标内容');
+                    showSuccess('链接生成成功');
                     resetGenerateButton();
                     
                 } catch (error) {
@@ -764,6 +1060,7 @@
                         id: linkData.id,
                         link: fullLink,
                         type: linkData.type,
+                        collectFeedback: linkData.collectFeedback, // 记录是否收集建议
                         expiry: linkData.expiry,
                         maxViews: linkData.maxViews,
                         createdAt: linkData.createdAt
@@ -876,12 +1173,17 @@
                                 break;
                         }
                         
+                        // 建议收集标识
+                        const feedbackBadge = item.collectFeedback 
+                            ? '<span class="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">收集建议</span>'
+                            : '';
+                        
                         historyItem.innerHTML = `
                             <div class="flex justify-between items-start">
                                 <div>
                                     <div class="flex items-center mb-1">
                                         ${typeIcon}
-                                        <span class="font-medium">${isExpired ? '<span class="text-red-500">[已过期]</span>' : ''}</span>
+                                        <span class="font-medium">${isExpired ? '<span class="text-red-500">[已过期]</span>' : ''}${feedbackBadge}</span>
                                     </div>
                                     <p class="text-sm text-gray-600 truncate max-w-[70%]">${item.link}</p>
                                 </div>
@@ -931,7 +1233,13 @@
                                 appState.linkDatabase = currentDatabase;
                             }
                             
+                            // 同时删除关联的建议反馈
+                            let feedbacks = appState.feedbackDatabase;
+                            feedbacks = feedbacks.filter(function(item) { return item.linkId !== id; });
+                            appState.feedbackDatabase = feedbacks;
+                            
                             loadHistory();
+                            loadFeedback();
                             showSuccess('记录已删除');
                         });
                     });
@@ -994,64 +1302,84 @@
                     return;
                 }
                 
-                // 更新访问次数
-                const currentDatabase = appState.linkDatabase;
-                currentDatabase[linkId].views++;
-                appState.linkDatabase = currentDatabase;
+                // 检查是否需要收集建议
+                const feedbackFormContainer = document.getElementById('feedback-form-container');
+                const linkContentContainer = document.getElementById('link-content-container');
                 
-                // 根据内容类型显示不同的目标内容
-                const container = document.getElementById('link-content-container');
-                
-                switch(linkData.type) {
-                    case 'url':
-                        // 显示网址内容（自动跳转）
-                        container.innerHTML = `
-                            <div class="text-center max-w-md">
-                                <div class="bg-blue-50 p-6 rounded-xl mb-6">
-                                    <i class="fa fa-external-link text-4xl text-primary mb-4"></i>
-                                    <h2 class="text-xl font-bold mb-2">即将跳转到目标网址</h2>
-                                    <p class="text-gray-600 break-all">${linkData.content}</p>
-                                </div>
-                                <p class="text-gray-500 text-sm">
-                                    3秒后自动跳转，或点击下方链接
-                                </p>
-                                <a href="${linkData.content}" target="_blank" class="inline-block mt-4 bg-primary hover:bg-primary/90 text-white font-medium py-2 px-6 rounded-lg transition-custom">
-                                    立即访问
-                                </a>
-                            </div>
-                        `;
+                if (linkData.collectFeedback) {
+                    // 需要收集建议，显示表单
+                    feedbackFormContainer.classList.remove('hidden');
+                    linkContentContainer.classList.add('hidden');
+                    
+                    // 绑定表单提交事件
+                    const feedbackForm = document.getElementById('feedback-form');
+                    feedbackForm.addEventListener('submit', function(e) {
+                        e.preventDefault();
                         
-                        // 3秒后自动跳转到目标网址
-                        setTimeout(() => {
-                            window.location.href = linkData.content;
-                        }, 3000);
-                        break;
+                        const submitBtn = document.getElementById('submit-feedback');
+                        const originalBtnHTML = submitBtn.innerHTML;
                         
-                    case 'text':
-                        // 显示文本内容
-                        container.innerHTML = `
-                            <div class="max-w-2xl bg-white p-6 rounded-xl shadow-md">
-                                <div class="flex items-center mb-4">
-                                    <i class="fa fa-file-text-o text-primary mr-2"></i>
-                                    <h2 class="text-xl font-bold">目标文本内容</h2>
-                                </div>
-                                <div class="border-t pt-4 text-gray-700 whitespace-pre-line">${linkData.content}</div>
-                            </div>
-                        `;
-                        break;
+                        // 禁用按钮防止重复提交
+                        submitBtn.disabled = true;
+                        submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i>提交中...';
                         
-                    case 'image':
-                        // 显示图片内容
-                        container.innerHTML = `
-                            <div class="max-w-2xl bg-white p-6 rounded-xl shadow-md text-center">
-                                <div class="flex items-center justify-center mb-4">
-                                    <i class="fa fa-image text-primary mr-2"></i>
-                                    <h2 class="text-xl font-bold">目标图片</h2>
-                                </div>
-                                <img src="${linkData.content}" alt="分享的图片" class="max-w-full max-h-[70vh] rounded-lg mx-auto">
-                            </div>
-                        `;
-                        break;
+                        // 获取表单数据
+                        const feedbackData = {
+                            server: document.getElementById('server').value.trim(),
+                            nickname: document.getElementById('nickname').value.trim(),
+                            feedback: document.getElementById('feedback').value.trim()
+                        };
+                        
+                        // 验证表单数据
+                        if (!feedbackData.server) {
+                            showError('请输入区服');
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = originalBtnHTML;
+                            return;
+                        }
+                        
+                        if (!feedbackData.nickname) {
+                            showError('请输入昵称');
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = originalBtnHTML;
+                            return;
+                        }
+                        
+                        if (!feedbackData.feedback) {
+                            showError('请输入建议内容');
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = originalBtnHTML;
+                            return;
+                        }
+                        
+                        // 保存建议反馈
+                        if (saveFeedback(linkId, feedbackData)) {
+                            // 保存成功，更新访问次数并显示内容
+                            const currentDatabase = appState.linkDatabase;
+                            currentDatabase[linkId].views++;
+                            appState.linkDatabase = currentDatabase;
+                            
+                            // 隐藏表单，显示内容
+                            feedbackFormContainer.classList.add('hidden');
+                            displayLinkContent(linkData, linkContentContainer);
+                            
+                            showSuccess('感谢您的建议！');
+                        } else {
+                            showError('提交建议失败，请重试');
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = originalBtnHTML;
+                        }
+                    });
+                } else {
+                    // 不需要收集建议，直接显示内容
+                    feedbackFormContainer.classList.add('hidden');
+                    
+                    // 更新访问次数
+                    const currentDatabase = appState.linkDatabase;
+                    currentDatabase[linkId].views++;
+                    appState.linkDatabase = currentDatabase;
+                    
+                    displayLinkContent(linkData, linkContentContainer);
                 }
             } catch (error) {
                 console.error('处理链接访问出错:', error);
@@ -1059,13 +1387,72 @@
             }
         }
         
+        // 显示链接内容
+        function displayLinkContent(linkData, container) {
+            container.classList.remove('hidden');
+            
+            switch(linkData.type) {
+                case 'url':
+                    // 显示网址内容（自动跳转）
+                    container.innerHTML = `
+                        <div class="text-center max-w-md">
+                            <div class="bg-blue-50 p-6 rounded-xl mb-6">
+                                <i class="fa fa-external-link text-4xl text-primary mb-4"></i>
+                                <h2 class="text-xl font-bold mb-2">即将跳转到目标网址</h2>
+                                <p class="text-gray-600 break-all">${linkData.content}</p>
+                            </div>
+                            <p class="text-gray-500 text-sm">
+                                3秒后自动跳转，或点击下方链接
+                            </p>
+                            <a href="${linkData.content}" target="_blank" class="inline-block mt-4 bg-primary hover:bg-primary/90 text-white font-medium py-2 px-6 rounded-lg transition-custom">
+                                立即访问
+                            </a>
+                        </div>
+                    `;
+                    
+                    // 3秒后自动跳转到目标网址
+                    setTimeout(() => {
+                        window.location.href = linkData.content;
+                    }, 3000);
+                    break;
+                    
+                case 'text':
+                    // 显示文本内容
+                    container.innerHTML = `
+                        <div class="max-w-2xl bg-white p-6 rounded-xl shadow-md">
+                            <div class="flex items-center mb-4">
+                                <i class="fa fa-file-text-o text-primary mr-2"></i>
+                                <h2 class="text-xl font-bold">目标文本内容</h2>
+                            </div>
+                            <div class="border-t pt-4 text-gray-700 whitespace-pre-line">${linkData.content}</div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'image':
+                    // 显示图片内容
+                    container.innerHTML = `
+                        <div class="max-w-2xl bg-white p-6 rounded-xl shadow-md text-center">
+                            <div class="flex items-center justify-center mb-4">
+                                <i class="fa fa-image text-primary mr-2"></i>
+                                <h2 class="text-xl font-bold">目标图片</h2>
+                            </div>
+                            <img src="${linkData.content}" alt="分享的图片" class="max-w-full max-h-[70vh] rounded-lg mx-auto">
+                        </div>
+                    `;
+                    break;
+            }
+        }
+        
         // 显示链接错误信息
         function showLinkError(message) {
             const linkScreen = document.getElementById('link-screen');
             const expiryMessage = document.getElementById('expired-message');
+            const feedbackFormContainer = document.getElementById('feedback-form-container');
             const linkContentContainer = document.getElementById('link-content-container');
             
             linkScreen.classList.remove('hidden');
+            feedbackFormContainer.classList.add('hidden');
             linkContentContainer.classList.add('hidden');
             expiryMessage.classList.remove('hidden');
             document.querySelector('#expired-message h2').textContent = '访问失败';
@@ -1181,4 +1568,3 @@
 </body>
 </html>
     
-
