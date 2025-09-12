@@ -102,6 +102,26 @@
             box-shadow: 0 2px 15px rgba(0,0,0,0.05);
             margin-bottom: 30px;
         }
+        .content-type-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .content-type-option {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            background-color: #f8fafc;
+            transition: all 0.3s;
+        }
+        .content-type-option.active {
+            background-color: #2563eb;
+            color: white;
+        }
         .generator-box .input-group {
             margin-bottom: 20px;
             text-align: left;
@@ -119,6 +139,41 @@
             border: 1px solid #ddd;
             border-radius: 6px;
             font-size: 14px;
+        }
+        .image-upload-area {
+            border: 2px dashed #ddd;
+            border-radius: 6px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: border-color 0.3s;
+            display: none;
+        }
+        .image-upload-area.active {
+            display: block;
+        }
+        .image-upload-area:hover {
+            border-color: #2563eb;
+        }
+        .image-upload-icon {
+            font-size: 40px;
+            color: #94a3b8;
+            margin-bottom: 15px;
+        }
+        .image-upload-text {
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .image-preview {
+            margin-top: 20px;
+            max-width: 100%;
+            display: none;
+        }
+        .image-preview img {
+            max-width: 100%;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
         .generator-box .config-row {
             display: flex;
@@ -220,6 +275,12 @@
         .history-item .info {
             flex: 1;
         }
+        .history-item .content-type {
+            font-size: 12px;
+            color: #2563eb;
+            margin-bottom: 5px;
+            display: inline-block;
+        }
         .history-item .url {
             font-size: 14px;
             color: #333;
@@ -269,7 +330,7 @@
         }
         /* 访问页面样式 */
         .access-container {
-            max-width: 600px;
+            max-width: 800px;
             margin: 50px auto;
             background: white;
             padding: 40px;
@@ -313,6 +374,14 @@
         }
         .access-container button:hover {
             background-color: #1d4ed8;
+        }
+        .access-content {
+            margin: 30px 0;
+        }
+        .access-content img {
+            max-width: 100%;
+            border-radius: 6px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
         }
         .access-container .meta-info {
             margin-top: 30px;
@@ -400,6 +469,9 @@
         .confirm-btn:hover {
             background-color: #b91c1c;
         }
+        #imageInput {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -436,9 +508,34 @@
         </header>
         
         <div class="generator-box">
-            <div class="input-group">
+            <!-- 内容类型选择器 -->
+            <div class="content-type-selector">
+                <div class="content-type-option active" data-type="link">
+                    <i class="fa fa-link"></i> 链接
+                </div>
+                <div class="content-type-option" data-type="image">
+                    <i class="fa fa-image"></i> 图片
+                </div>
+            </div>
+            
+            <!-- 链接输入区域 -->
+            <div class="input-group" id="linkInputGroup">
                 <label for="targetUrl">目标链接</label>
                 <input type="text" id="targetUrl" placeholder="请输入需要转发的目标链接">
+            </div>
+            
+            <!-- 图片上传区域 -->
+            <div class="image-upload-area" id="imageUploadArea">
+                <div class="image-upload-icon">
+                    <i class="fa fa-cloud-upload"></i>
+                </div>
+                <p class="image-upload-text">点击或拖拽图片到此处上传</p>
+                <p style="font-size: 12px; color: #94a3b8;">支持 JPG、PNG、GIF 格式，最大 5MB</p>
+                <input type="file" id="imageInput" accept="image/*">
+                
+                <div class="image-preview" id="imagePreview">
+                    <img id="previewImage" src="" alt="预览图">
+                </div>
             </div>
             
             <div class="config-row">
@@ -497,6 +594,12 @@
         <div id="accessStatus" class="status valid">
             您可以安全访问目标内容
         </div>
+        
+        <!-- 访问内容区域 -->
+        <div class="access-content" id="accessContent">
+            <!-- 内容将在这里动态显示 -->
+        </div>
+        
         <button id="openTargetBtn">打开目标内容</button>
         <div class="meta-info">
             <p id="remainingViews">剩余访问次数：2次</p>
@@ -515,8 +618,15 @@
             toolPassword: "007",
             // 默认有效期和访问次数
             defaultExpireMinutes: 10,
-            defaultMaxViews: 3
+            defaultMaxViews: 3,
+            // 图片上传限制
+            maxImageSize: 5 * 1024 * 1024, // 5MB
+            allowedImageTypes: ['image/jpeg', 'image/png', 'image/gif']
         };
+
+        // 当前选中的内容类型
+        let currentContentType = 'link';
+        let uploadedImageData = null;
 
         // DOM元素
         const elements = {
@@ -534,7 +644,13 @@
             
             // 生成器页面相关
             generatorPage: document.getElementById('generatorPage'),
+            contentTypeOptions: document.querySelectorAll('.content-type-option'),
+            linkInputGroup: document.getElementById('linkInputGroup'),
             targetUrl: document.getElementById('targetUrl'),
+            imageUploadArea: document.getElementById('imageUploadArea'),
+            imageInput: document.getElementById('imageInput'),
+            imagePreview: document.getElementById('imagePreview'),
+            previewImage: document.getElementById('previewImage'),
             expireMinutes: document.getElementById('expireMinutes'),
             maxViews: document.getElementById('maxViews'),
             generateBtn: document.getElementById('generateBtn'),
@@ -549,9 +665,11 @@
             accessPage: document.getElementById('accessPage'),
             accessTitle: document.getElementById('accessTitle'),
             accessStatus: document.getElementById('accessStatus'),
+            accessContent: document.getElementById('accessContent'),
             openTargetBtn: document.getElementById('openTargetBtn'),
             remainingViews: document.getElementById('remainingViews'),
             remainingTime: document.getElementById('remainingTime'),
+            metaInfo: document.querySelector('.meta-info'),
             
             // 提示框
             toast: document.getElementById('toast')
@@ -588,6 +706,8 @@
                     loadHistory();
                     bindGeneratorEvents();
                     bindDeleteEvents();
+                    bindContentTypeEvents();
+                    bindImageUploadEvents();
                 } else {
                     elements.passwordModal.style.display = 'flex';
                     bindPasswordEvents();
@@ -615,6 +735,8 @@
                 loadHistory();
                 bindGeneratorEvents();
                 bindDeleteEvents();
+                bindContentTypeEvents();
+                bindImageUploadEvents();
             } else {
                 elements.passwordError.style.display = 'block';
                 elements.accessPassword.classList.add('border-red-500');
@@ -623,6 +745,101 @@
                     elements.accessPassword.classList.remove('border-red-500');
                 }, 1000);
             }
+        }
+
+        // 绑定内容类型选择事件
+        function bindContentTypeEvents() {
+            elements.contentTypeOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    // 移除所有选项的active类
+                    elements.contentTypeOptions.forEach(opt => opt.classList.remove('active'));
+                    // 给当前点击的选项添加active类
+                    option.classList.add('active');
+                    
+                    // 更新当前内容类型
+                    currentContentType = option.getAttribute('data-type');
+                    
+                    // 显示对应的输入区域
+                    if (currentContentType === 'link') {
+                        elements.linkInputGroup.style.display = 'block';
+                        elements.imageUploadArea.classList.remove('active');
+                        uploadedImageData = null;
+                        elements.imagePreview.style.display = 'none';
+                    } else if (currentContentType === 'image') {
+                        elements.linkInputGroup.style.display = 'none';
+                        elements.imageUploadArea.classList.add('active');
+                    }
+                });
+            });
+        }
+
+        // 绑定图片上传事件
+        function bindImageUploadEvents() {
+            // 点击上传区域触发文件选择
+            elements.imageUploadArea.addEventListener('click', () => {
+                elements.imageInput.click();
+            });
+            
+            // 阻止上传区域的点击事件冒泡
+            elements.imagePreview.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+            
+            // 处理文件选择
+            elements.imageInput.addEventListener('change', handleImageSelect);
+            
+            // 处理拖拽上传
+            elements.imageUploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                elements.imageUploadArea.style.borderColor = '#2563eb';
+            });
+            
+            elements.imageUploadArea.addEventListener('dragleave', () => {
+                elements.imageUploadArea.style.borderColor = '#ddd';
+            });
+            
+            elements.imageUploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                elements.imageUploadArea.style.borderColor = '#ddd';
+                
+                if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    handleImageFile(e.dataTransfer.files[0]);
+                }
+            });
+        }
+
+        // 处理图片选择
+        function handleImageSelect(e) {
+            if (e.target.files && e.target.files[0]) {
+                handleImageFile(e.target.files[0]);
+            }
+        }
+
+        // 处理图片文件
+        function handleImageFile(file) {
+            // 验证文件类型
+            if (!CONFIG.allowedImageTypes.includes(file.type)) {
+                showToast('请上传JPG、PNG或GIF格式的图片');
+                return;
+            }
+            
+            // 验证文件大小
+            if (file.size > CONFIG.maxImageSize) {
+                showToast('图片大小不能超过5MB');
+                return;
+            }
+            
+            // 读取图片并显示预览
+            const reader = new FileReader();
+            
+            reader.onload = (e) => {
+                uploadedImageData = e.target.result;
+                elements.previewImage.src = uploadedImageData;
+                elements.imagePreview.style.display = 'block';
+                showToast('图片上传成功');
+            };
+            
+            reader.readAsDataURL(file);
         }
 
         // 绑定生成器事件
@@ -686,19 +903,35 @@
 
         // 生成链接
         function generateLink() {
-            // 验证目标链接
-            const targetUrl = elements.targetUrl.value.trim();
-            if (!targetUrl) {
-                showToast('请输入目标链接');
-                return;
-            }
+            // 验证内容
+            let contentData = null;
+            let contentPreview = '';
             
-            // 验证URL格式
-            try {
-                new URL(targetUrl);
-            } catch (e) {
-                showToast('请输入有效的URL（包含http://或https://）');
-                return;
+            if (currentContentType === 'link') {
+                // 验证目标链接
+                const targetUrl = elements.targetUrl.value.trim();
+                if (!targetUrl) {
+                    showToast('请输入目标链接');
+                    return;
+                }
+                
+                // 验证URL格式
+                try {
+                    new URL(targetUrl);
+                    contentData = targetUrl;
+                    contentPreview = targetUrl;
+                } catch (e) {
+                    showToast('请输入有效的URL（包含http://或https://）');
+                    return;
+                }
+            } else if (currentContentType === 'image') {
+                // 验证图片
+                if (!uploadedImageData) {
+                    showToast('请先上传图片');
+                    return;
+                }
+                contentData = uploadedImageData;
+                contentPreview = '图片内容';
             }
             
             // 获取配置
@@ -715,7 +948,8 @@
             // 构建链接数据
             const linkData = {
                 id: linkId,
-                targetUrl: targetUrl,
+                contentType: currentContentType,
+                contentData: contentData,
                 createTime: createTime,
                 expireTime: expireTime,
                 maxViews: maxViews,
@@ -735,19 +969,20 @@
             elements.resultArea.classList.add('active');
             
             // 添加到历史记录
-            addToHistory(linkData, generatedLink);
+            addToHistory(linkData, generatedLink, contentPreview);
             
             showToast('链接生成成功');
         }
 
         // 添加到历史记录
-        function addToHistory(linkData, generatedLink) {
+        function addToHistory(linkData, generatedLink, contentPreview) {
             let history = JSON.parse(localStorage.getItem(STORAGE_KEYS.history) || '[]');
             
             const historyItem = {
                 id: linkData.id,
+                contentType: linkData.contentType,
                 generatedLink: generatedLink,
-                targetUrl: linkData.targetUrl,
+                contentPreview: contentPreview,
                 createTime: linkData.createTime,
                 expireTime: linkData.expireTime,
                 maxViews: linkData.maxViews,
@@ -796,6 +1031,11 @@
                 const statusClass = isExpired ? 'status expired' : 'status active';
                 const statusText = isExpired ? '已失效' : '生效中';
                 
+                // 内容类型标签
+                const contentTypeLabel = item.contentType === 'link' 
+                    ? '<span class="content-type"><i class="fa fa-link"></i> 链接</span>'
+                    : '<span class="content-type"><i class="fa fa-image"></i> 图片</span>';
+                
                 // 格式化时间
                 const createDate = new Date(item.createTime);
                 const timeStr = `${createDate.getHours().toString().padStart(2, '0')}:${createDate.getMinutes().toString().padStart(2, '0')}`;
@@ -803,7 +1043,8 @@
                 html += `
                     <div class="history-item">
                         <div class="info">
-                            <div class="url">${item.targetUrl}</div>
+                            ${contentTypeLabel}
+                            <div class="url">${item.contentPreview}</div>
                             <div class="meta">
                                 生成时间: ${timeStr} | 有效期: ${item.expireMinutes}分钟 | 访问次数: ${currentViews}/${item.maxViews}
                             </div>
@@ -897,32 +1138,55 @@
             // 显示有效链接页面
             elements.accessPage.style.display = 'block';
             
+            // 根据内容类型显示不同内容
+            if (linkData.contentType === 'link') {
+                elements.accessContent.innerHTML = `
+                    <p>点击下方按钮访问目标链接</p>
+                    <p style="word-break: break-all; margin: 15px 0; font-size: 14px;">${linkData.contentData}</p>
+                `;
+                elements.openTargetBtn.textContent = '打开目标链接';
+                elements.openTargetBtn.onclick = () => {
+                    window.location.href = linkData.contentData;
+                };
+            } else if (linkData.contentType === 'image') {
+                elements.accessContent.innerHTML = `
+                    <img src="${linkData.contentData}" alt="目标图片">
+                `;
+                elements.openTargetBtn.textContent = '查看原图';
+                elements.openTargetBtn.onclick = () => {
+                    // 在新窗口打开图片
+                    const newWindow = window.open('', '_blank');
+                    newWindow.document.write(`<img src="${linkData.contentData}" style="max-width: 100%; max-height: 100vh;" alt="目标图片">`);
+                    newWindow.document.close();
+                };
+            }
+            
             // 计算剩余时间和次数
             const remainingMinutes = Math.ceil((linkData.expireTime - now) / (60 * 1000));
             const remainingViews = linkData.maxViews - linkData.currentViews;
             
-            // 更新UI
+            // 更新UI - 只在链接有效时显示剩余信息
             elements.remainingViews.textContent = `剩余访问次数：${remainingViews}次`;
             elements.remainingTime.textContent = `剩余有效时间：约${remainingMinutes}分钟`;
+            elements.metaInfo.style.display = 'block'; // 确保有效时显示
             
-            // 绑定打开目标链接事件
-            elements.openTargetBtn.addEventListener('click', () => {
-                window.location.href = linkData.targetUrl;
-            });
-            
-            // 自动跳转（3秒后）
-            setTimeout(() => {
-                window.location.href = linkData.targetUrl;
-            }, 3000);
+            // 自动跳转（3秒后）- 只对链接类型生效
+            if (linkData.contentType === 'link') {
+                setTimeout(() => {
+                    window.location.href = linkData.contentData;
+                }, 3000);
+            }
         }
 
-        // 显示无效链接页面
+        // 显示无效链接页面 - 不显示剩余次数和时间
         function showInvalidLink(message) {
             elements.accessPage.style.display = 'block';
             elements.accessTitle.textContent = '链接已失效';
             elements.accessStatus.textContent = message;
             elements.accessStatus.className = 'status invalid';
+            elements.accessContent.innerHTML = '';
             elements.openTargetBtn.style.display = 'none';
+            // 隐藏包含剩余次数和时间的容器
             elements.metaInfo.style.display = 'none';
         }
 
