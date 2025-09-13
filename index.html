@@ -340,7 +340,7 @@
                     <i class="fa fa-link text-4xl text-red-500"></i>
                 </div>
                 <h2 class="text-2xl font-bold mb-3">链接已失效</h2>
-                <p class="text-gray-600 mb-6">该链接已过期或已达到最大访问次数</p>
+                <p class="text-gray-600 mb-6">该链接已过期或</p>
             </div>
         </div>
     </div>
@@ -1064,7 +1064,7 @@
                     // 更新次数（即使超过也更新，确保后续访问持续受限）
                     currentDatabase[linkId].views = newViewsCount;
                     appState.linkDatabase = currentDatabase; // 保存到本地存储
-                    showLinkError('链接已达到最大访问次数');
+                    showLinkError('链接已过期');
                     return;
                 }
                 
@@ -1342,3 +1342,4 @@
 </body>
 </html>
     
+
