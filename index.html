@@ -673,15 +673,15 @@
                     return;
                 }
 
-                // 检查访问次数
+                // 先更新访问次数，再检查是否达到最大值（修复访问次数限制问题）
+                linkData.current_views++;
+                await updateLinkViews(linkData);
+
+                // 检查访问次数是否已达最大值
                 if (linkData.current_views >= linkData.max_views) {
                     showExpiredContent();
                     return;
                 }
-
-                // 更新访问次数
-                linkData.current_views++;
-                await updateLinkViews(linkData);
 
                 // 新增：存储目标内容数据，显示建议收集表单
                 targetContentData = linkData;
