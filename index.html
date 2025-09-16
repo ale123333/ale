@@ -43,6 +43,21 @@
         <span id="toast-text"></span>
     </div>
 
+    <!-- 链接内容展示界面（用于无需密码查看内容） -->
+    <div id="content-screen" class="hidden min-h-screen flex flex-col items-center justify-center p-4">
+        <div class="w-full max-w-2xl bg-white rounded-xl shadow-lg p-6 mb-8">
+            <h3 id="content-title" class="text-xl font-bold text-primary mb-4 text-center"></h3>
+            <div id="content-container" class="min-h-[200px] flex items-center justify-center"></div>
+        </div>
+        <div id="content-expired" class="hidden w-full max-w-2xl bg-white rounded-xl shadow-lg p-8 text-center text-gray-500">
+            <i class="fa fa-exclamation-triangle text-4xl mb-3 text-yellow-500"></i>
+            <p class="text-lg">链接已过期或已达最大访问次数</p>
+            <button id="back-to-tool" class="mt-4 px-4 py-2 bg-primary text-white rounded-lg btn-effect">
+                返回工具
+            </button>
+        </div>
+    </div>
+
     <!-- 密码验证界面 -->
     <div id="password-screen" class="min-h-screen flex items-center justify-center p-4">
         <div class="w-full max-w-md bg-white rounded-xl shadow-lg overflow-hidden">
@@ -193,12 +208,21 @@
     <script>
         // 全局变量
         let supabaseClient = null;
-        const VALID_PASSWORD = '007'; // 有效密码
-        const TABLE_NAME = 'link_history'; // 正确的表名
-        let historyExpanded = false; // 历史记录是否展开
+        const VALID_PASSWORD = '007'; // 工具访问密码
+        const TABLE_NAME = 'link_history'; // 数据表名
+        let historyExpanded = false; 
+        let currentViews = 0; 
+        let targetLinkId = '';
 
         // DOM元素
         const el = {
+            // 内容展示界面
+            contentScreen: document.getElementById('content-screen'),
+            contentTitle: document.getElementById('content-title'),
+            contentContainer: document.getElementById('content-container'),
+            contentExpired: document.getElementById('content-expired'),
+            backToTool: document.getElementById('back-to-tool'),
+            
             // 密码界面
             passwordScreen: document.getElementById('password-screen'),
             passwordInput: document.getElementById('password'),
@@ -265,7 +289,7 @@
             }
         }
 
-        // 密码验证
+        // 密码验证（工具访问需要密码）
         function verifyPassword() {
             const password = el.passwordInput.value.trim();
             if (!password) {
@@ -298,20 +322,17 @@
 
         // 切换内容类型
         function switchContentType(type) {
-            // 重置所有类型标签的样式
             document.querySelectorAll('input[name="type"]').forEach(radio => {
                 const label = radio.closest('label');
                 label.classList.remove('border-primary', 'bg-primary/5');
                 label.classList.add('border-gray-200', 'hover:border-primary', 'hover:bg-primary/5');
             });
 
-            // 设置当前选中标签的样式
             const activeRadio = document.querySelector(`input[name="type"][value="${type}"]`);
             const activeLabel = activeRadio.closest('label');
             activeLabel.classList.remove('border-gray-200', 'hover:border-primary', 'hover:bg-primary/5');
             activeLabel.classList.add('border-primary', 'bg-primary/5');
 
-            // 切换输入框显示
             el.urlInput.classList.add('hidden');
             el.textInput.classList.add('hidden');
             el.imageInput.classList.add('hidden');
@@ -353,13 +374,11 @@
             event.preventDefault();
 
             try {
-                // 获取表单数据
                 const type = document.querySelector('input[name="type"]:checked').value;
                 const expiry = parseInt(el.expiryInput.value);
                 const maxViews = parseInt(el.viewsInput.value);
                 const offlineMode = el.offlineMode.checked;
 
-                // 验证内容
                 let content;
                 if (type === 'url') {
                     content = el.urlContent.value.trim();
@@ -377,17 +396,18 @@
                     });
                 }
 
-                // 生成链接ID
+                // 生成唯一链接ID
                 const linkId = Math.random().toString(36).substring(2, 12);
                 const linkUrl = `${window.location.origin}${window.location.pathname}?id=${linkId}`;
 
-                // 准备链接数据
+                // 准备链接数据（新增当前访问次数字段）
                 const linkData = {
                     id: linkId,
                     content: content,
                     type: type,
                     expiry: new Date(Date.now() + expiry * 60000).toISOString(),
                     max_views: maxViews,
+                    current_views: 0, // 初始访问次数
                     created_at: new Date().toISOString(),
                     offline: offlineMode
                 };
@@ -410,7 +430,6 @@
                 el.resultViews.textContent = maxViews;
                 el.result.classList.remove('hidden');
                 
-                // 更新历史记录
                 loadHistory();
                 showToast('链接生成成功');
             } catch (error) {
@@ -439,10 +458,8 @@
                 const offlineMode = el.offlineMode.checked;
 
                 if (offlineMode) {
-                    // 加载本地记录
                     links = JSON.parse(localStorage.getItem('linkHistory') || '[]');
                 } else if (supabaseClient) {
-                    // 加载云端记录
                     const { data, error } = await supabaseClient
                         .from(TABLE_NAME)
                         .select('*')
@@ -452,7 +469,6 @@
                     links = data || [];
                 }
 
-                // 显示历史记录
                 if (links.length === 0) {
                     el.historyEmpty.classList.remove('hidden');
                     el.historyList.classList.add('hidden');
@@ -464,7 +480,6 @@
                 el.historyList.classList.remove('hidden');
                 el.historyList.innerHTML = '';
                 
-                // 控制显示的记录数量
                 const displayLinks = historyExpanded ? links : links.slice(0, 3);
                 
                 displayLinks.forEach(link => {
@@ -499,7 +514,6 @@
                     el.historyList.appendChild(item);
                 });
 
-                // 绑定复制事件
                 document.querySelectorAll('.copy-history-btn').forEach(btn => {
                     btn.addEventListener('click', function() {
                         const link = this.previousElementSibling.value;
@@ -509,7 +523,6 @@
                     });
                 });
 
-                // 显示或隐藏展开/收起按钮
                 if (links.length > 3) {
                     el.toggleHistory.classList.remove('hidden');
                     updateToggleButtonText();
@@ -548,6 +561,138 @@
                 });
         }
 
+        // 新增：解析URL参数获取链接ID
+        function getLinkIdFromUrl() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('id');
+        }
+
+        // 新增：加载并显示链接内容（无需密码）
+        async function loadLinkContent(linkId) {
+            try {
+                let linkData = null;
+                const offlineMode = el.offlineMode.checked;
+
+                // 从本地或云端获取链接数据
+                if (localStorage.getItem('linkHistory')) {
+                    const localLinks = JSON.parse(localStorage.getItem('linkHistory') || '[]');
+                    linkData = localLinks.find(link => link.id === linkId);
+                }
+
+                if (!linkData && supabaseClient) {
+                    const { data } = await supabaseClient
+                        .from(TABLE_NAME)
+                        .select('*')
+                        .eq('id', linkId)
+                        .single();
+                    linkData = data;
+                }
+
+                // 验证链接有效性
+                if (!linkData) {
+                    showExpiredContent();
+                    return;
+                }
+
+                // 检查是否过期
+                const now = new Date();
+                const expiryDate = new Date(linkData.expiry);
+                if (now > expiryDate) {
+                    showExpiredContent();
+                    return;
+                }
+
+                // 检查访问次数
+                if (linkData.current_views >= linkData.max_views) {
+                    showExpiredContent();
+                    return;
+                }
+
+                // 更新访问次数
+                linkData.current_views++;
+                await updateLinkViews(linkData);
+
+                // 显示内容
+                el.contentScreen.classList.remove('hidden');
+                el.passwordScreen.classList.add('hidden');
+                el.mainScreen.classList.add('hidden');
+
+                // 根据内容类型展示不同内容
+                el.contentTitle.textContent = getContentTitle(linkData.type);
+                el.contentContainer.innerHTML = getContentHtml(linkData);
+
+            } catch (error) {
+                console.error('加载链接内容失败:', error);
+                showExpiredContent();
+            }
+        }
+
+        // 新增：更新链接访问次数
+        async function updateLinkViews(linkData) {
+            try {
+                if (linkData.offline) {
+                    // 更新本地存储
+                    let localLinks = JSON.parse(localStorage.getItem('linkHistory') || '[]');
+                    const index = localLinks.findIndex(link => link.id === linkData.id);
+                    if (index !== -1) {
+                        localLinks[index] = linkData;
+                        localStorage.setItem('linkHistory', JSON.stringify(localLinks));
+                    }
+                } else if (supabaseClient) {
+                    // 更新云端数据
+                    await supabaseClient
+                        .from(TABLE_NAME)
+                        .update({ current_views: linkData.current_views })
+                        .eq('id', linkData.id);
+                }
+            } catch (error) {
+                console.error('更新访问次数失败:', error);
+            }
+        }
+
+        // 新增：获取内容标题
+        function getContentTitle(type) {
+            const titles = {
+                'url': '网址内容',
+                'text': '文字内容',
+                'image': '图片内容'
+            };
+            return titles[type] || '内容预览';
+        }
+
+        // 新增：根据类型生成内容HTML
+        function getContentHtml(linkData) {
+            switch (linkData.type) {
+                case 'url':
+                    return `
+                        <div class="w-full">
+                            <a href="${linkData.content}" target="_blank" class="text-primary hover:underline flex items-center">
+                                <i class="fa fa-external-link mr-2"></i>
+                                ${linkData.content}
+                            </a>
+                            <div class="mt-4">
+                                <button onclick="window.open('${linkData.content}', '_blank')" class="px-4 py-2 bg-primary text-white rounded-lg btn-effect">
+                                    <i class="fa fa-link mr-2"></i>访问链接
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                case 'text':
+                    return `<div class="whitespace-pre-line text-gray-800">${linkData.content}</div>`;
+                case 'image':
+                    return `<img src="${linkData.content}" alt="图片内容" class="max-w-full max-h-96 rounded-lg shadow-md">`;
+                default:
+                    return '<p class="text-gray-500">无法识别的内容类型</p>';
+            }
+        }
+
+        // 新增：显示链接过期信息
+        function showExpiredContent() {
+            el.contentScreen.classList.remove('hidden');
+            el.contentContainer.parentElement.classList.add('hidden');
+            el.contentExpired.classList.remove('hidden');
+        }
+
         // 绑定事件
         function bindEvents() {
             // 密码界面事件
@@ -583,16 +728,33 @@
             // 复制链接
             el.copyBtn.addEventListener('click', copyLink);
 
-            // 离线模式切换时重新加载历史
+            // 离线模式切换
             el.offlineMode.addEventListener('change', loadHistory);
             
             // 历史记录展开/收起
             el.toggleHistory.addEventListener('click', toggleHistoryDisplay);
+
+            // 新增：内容展示界面事件
+            el.backToTool.addEventListener('click', () => {
+                el.contentScreen.classList.add('hidden');
+                el.contentExpired.classList.add('hidden');
+                el.contentContainer.parentElement.classList.remove('hidden');
+                el.passwordScreen.classList.remove('hidden');
+            });
         }
 
         // 初始化
         document.addEventListener('DOMContentLoaded', () => {
             bindEvents();
+            
+            // 关键逻辑：检查是否是访问生成的链接，如果是则直接显示内容（无需密码）
+            const linkId = getLinkIdFromUrl();
+            if (linkId) {
+                targetLinkId = linkId;
+                initSupabase().then(() => {
+                    loadLinkContent(linkId);
+                });
+            }
         });
     </script>
 </body></html>
