@@ -59,7 +59,7 @@
     </div>
 
     <!-- 密码验证界面 -->
-    <div id="password-screen" class="min-h-screen flex items-center justify-center p-4">
+    <div id="password-screen" class="hidden min-h-screen flex items-center justify-center p-4">
         <div class="w-full max-w-md bg-white rounded-xl shadow-lg overflow-hidden">
             <div class="bg-primary p-6 text-white text-center">
                 <i class="fa fa-lock text-4xl mb-3"></i>
@@ -275,7 +275,7 @@
             }, 3000);
         }
 
-        // 初始化Supabase - 修改为返回Promise
+        // 初始化Supabase - 返回Promise
         function initSupabase() {
             return new Promise((resolve) => {
                 try {
@@ -404,7 +404,7 @@
                 const linkId = Math.random().toString(36).substring(2, 12);
                 const linkUrl = `${window.location.origin}${window.location.pathname}?id=${linkId}`;
 
-                // 准备链接数据（新增当前访问次数字段）
+                // 准备链接数据
                 const linkData = {
                     id: linkId,
                     content: content,
@@ -618,8 +618,6 @@
 
                 // 显示内容
                 el.contentScreen.classList.remove('hidden');
-                el.passwordScreen.classList.add('hidden');
-                el.mainScreen.classList.add('hidden');
 
                 // 根据内容类型展示不同内容
                 el.contentTitle.textContent = getContentTitle(linkData.type);
@@ -751,13 +749,17 @@
         document.addEventListener('DOMContentLoaded', () => {
             bindEvents();
             
-            // 关键逻辑：检查是否是访问生成的链接，如果是则直接显示内容（无需密码）
+            // 关键逻辑：检查是否是访问生成的链接
             const linkId = getLinkIdFromUrl();
             if (linkId) {
+                // 如果是访问生成的链接，直接加载内容，不显示密码页面
                 targetLinkId = linkId;
                 initSupabase().then(() => {
                     loadLinkContent(linkId);
                 });
+            } else {
+                // 如果是直接访问工具，显示密码页面
+                el.passwordScreen.classList.remove('hidden');
             }
         });
     </script>
