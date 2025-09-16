@@ -275,18 +275,22 @@
             }, 3000);
         }
 
-        // 初始化Supabase
+        // 初始化Supabase - 修改为返回Promise
         function initSupabase() {
-            try {
-                const url = 'https://wjsjxwfdwkdxwybfnifz.supabase.co';
-                const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indqc2p4d2Zkd2tkeHd5YmZuaWZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3MzQxNDcsImV4cCI6MjA3MzMxMDE0N30.lXAqyRAfoHbZzdcuXyxG7vmjwsg1Pp4tT6HUE68zKTQ';
-                supabaseClient = window.supabase.createClient(url, key);
-                console.log('Supabase初始化成功');
-            } catch (error) {
-                console.error('Supabase初始化失败:', error);
-                showToast('云端服务初始化失败，将使用本地模式', true);
-                el.offlineMode.checked = true;
-            }
+            return new Promise((resolve) => {
+                try {
+                    const url = 'https://wjsjxwfdwkdxwybfnifz.supabase.co';
+                    const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indqc2p4d2Zkd2tkeHd5YmZuaWZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3MzQxNDcsImV4cCI6MjA3MzMxMDE0N30.lXAqyRAfoHbZzdcuXyxG7vmjwsg1Pp4tT6HUE68zKTQ';
+                    supabaseClient = window.supabase.createClient(url, key);
+                    console.log('Supabase初始化成功');
+                    resolve();
+                } catch (error) {
+                    console.error('Supabase初始化失败:', error);
+                    showToast('云端服务初始化失败，将使用本地模式', true);
+                    el.offlineMode.checked = true;
+                    resolve();
+                }
+            });
         }
 
         // 密码验证（工具访问需要密码）
@@ -561,13 +565,13 @@
                 });
         }
 
-        // 新增：解析URL参数获取链接ID
+        // 解析URL参数获取链接ID
         function getLinkIdFromUrl() {
             const params = new URLSearchParams(window.location.search);
             return params.get('id');
         }
 
-        // 新增：加载并显示链接内容（无需密码）
+        // 加载并显示链接内容（无需密码）
         async function loadLinkContent(linkId) {
             try {
                 let linkData = null;
@@ -627,7 +631,7 @@
             }
         }
 
-        // 新增：更新链接访问次数
+        // 更新链接访问次数
         async function updateLinkViews(linkData) {
             try {
                 if (linkData.offline) {
@@ -650,7 +654,7 @@
             }
         }
 
-        // 新增：获取内容标题
+        // 获取内容标题
         function getContentTitle(type) {
             const titles = {
                 'url': '网址内容',
@@ -660,7 +664,7 @@
             return titles[type] || '内容预览';
         }
 
-        // 新增：根据类型生成内容HTML
+        // 根据类型生成内容HTML
         function getContentHtml(linkData) {
             switch (linkData.type) {
                 case 'url':
@@ -686,7 +690,7 @@
             }
         }
 
-        // 新增：显示链接过期信息
+        // 显示链接过期信息
         function showExpiredContent() {
             el.contentScreen.classList.remove('hidden');
             el.contentContainer.parentElement.classList.add('hidden');
@@ -734,7 +738,7 @@
             // 历史记录展开/收起
             el.toggleHistory.addEventListener('click', toggleHistoryDisplay);
 
-            // 新增：内容展示界面事件
+            // 内容展示界面事件
             el.backToTool.addEventListener('click', () => {
                 el.contentScreen.classList.add('hidden');
                 el.contentExpired.classList.add('hidden');
