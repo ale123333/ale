@@ -43,6 +43,33 @@
         <span id="toast-text"></span>
     </div>
 
+    <!-- 新增：建议收集表单（前置显示） -->
+    <div id="feedback-form" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden">
+        <div class="w-full max-w-md bg-white rounded-xl shadow-xl p-6">
+            <h3 class="text-xl font-bold text-primary mb-4 text-center">建议收集</h3>
+            <div class="space-y-4">
+                <div>
+                    <label for="game-name" class="block text-sm font-medium text-gray-700 mb-1">游戏名</label>
+                    <input type="text" id="game-name" class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus" placeholder="请输入游戏名称">
+                </div>
+                <div>
+                    <label for="game-server" class="block text-sm font-medium text-gray-700 mb-1">区服</label>
+                    <input type="text" id="game-server" class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus" placeholder="请输入区服信息">
+                </div>
+                <div>
+                    <label for="game-feedback" class="block text-sm font-medium text-gray-700 mb-1">建议或反馈</label>
+                    <textarea id="game-feedback" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus" placeholder="请输入您的建议或反馈"></textarea>
+                </div>
+                <div id="feedback-error" class="text-red-500 text-sm text-center hidden">
+                    请完善所有必填项
+                </div>
+                <button id="submit-feedback" class="w-full bg-primary text-white py-2 rounded-lg btn-effect">
+                    提交并进入
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- 链接内容展示界面（用于无需密码查看内容） -->
     <div id="content-screen" class="hidden min-h-screen flex flex-col items-center justify-center p-4">
         <div class="w-full max-w-2xl bg-white rounded-xl shadow-lg p-6 mb-8">
@@ -213,9 +240,19 @@
         let historyExpanded = false; 
         let currentViews = 0; 
         let targetLinkId = '';
+        // 新增：存储目标内容数据（提交建议后使用）
+        let targetContentData = null;
 
         // DOM元素
         const el = {
+            // 新增：建议收集表单元素
+            feedbackForm: document.getElementById('feedback-form'),
+            gameName: document.getElementById('game-name'),
+            gameServer: document.getElementById('game-server'),
+            gameFeedback: document.getElementById('game-feedback'),
+            submitFeedback: document.getElementById('submit-feedback'),
+            feedbackError: document.getElementById('feedback-error'),
+            
             // 内容展示界面
             contentScreen: document.getElementById('content-screen'),
             contentTitle: document.getElementById('content-title'),
@@ -571,6 +608,24 @@
             return params.get('id');
         }
 
+        // 新增：提交建议并显示目标内容
+        function handleFeedbackSubmit() {
+            const gameName = el.gameName.value.trim();
+            const gameServer = el.gameServer.value.trim();
+            const gameFeedback = el.gameFeedback.value.trim();
+
+            // 表单验证
+            if (!gameName || !gameServer || !gameFeedback) {
+                el.feedbackError.classList.remove('hidden');
+                return;
+            }
+
+            // 隐藏表单，显示目标内容
+            el.feedbackForm.classList.add('hidden');
+            el.contentTitle.textContent = getContentTitle(targetContentData.type);
+            el.contentContainer.innerHTML = getContentHtml(targetContentData);
+        }
+
         // 加载并显示链接内容（无需密码）
         async function loadLinkContent(linkId) {
             try {
@@ -616,12 +671,14 @@
                 linkData.current_views++;
                 await updateLinkViews(linkData);
 
-                // 显示内容
+                // 新增：存储目标内容数据，显示建议收集表单
+                targetContentData = linkData;
                 el.contentScreen.classList.remove('hidden');
-
-                // 根据内容类型展示不同内容
-                el.contentTitle.textContent = getContentTitle(linkData.type);
-                el.contentContainer.innerHTML = getContentHtml(linkData);
+                el.feedbackForm.classList.remove('hidden');
+                el.feedbackError.classList.add('hidden');
+                el.gameName.value = '';
+                el.gameServer.value = '';
+                el.gameFeedback.value = '';
 
             } catch (error) {
                 console.error('加载链接内容失败:', error);
@@ -690,6 +747,7 @@
 
         // 显示链接过期信息
         function showExpiredContent() {
+            el.feedbackForm.classList.add('hidden'); // 新增：隐藏建议表单
             el.contentScreen.classList.remove('hidden');
             el.contentContainer.parentElement.classList.add('hidden');
             el.contentExpired.classList.remove('hidden');
@@ -697,6 +755,9 @@
 
         // 绑定事件
         function bindEvents() {
+            // 新增：建议收集表单事件
+            el.submitFeedback.addEventListener('click', handleFeedbackSubmit);
+            
             // 密码界面事件
             el.verifyBtn.addEventListener('click', verifyPassword);
             el.togglePwd.addEventListener('click', togglePassword);
