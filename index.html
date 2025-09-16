@@ -85,8 +85,7 @@
         <main class="flex-grow max-w-4xl w-full mx-auto p-4 py-8">
             <!-- 生成表单 -->
             <div class="bg-white rounded-xl shadow-md p-6 mb-8">
-                <h2 class="text-xl font-bold mb-6">
-</h2>
+                <h2 class="text-xl font-bold mb-6">生成临时访问链接</h2>
                 
                 <form id="link-form" class="space-y-5">
                     <!-- 内容类型 -->
@@ -297,22 +296,22 @@
             el.togglePwd.innerHTML = type === 'password' ? '<i class="fa fa-eye-slash"></i>' : '<i class="fa fa-eye"></i>';
         }
 
-        // 切换内容类型（仅修改此函数，修复蓝色边框异常）
+        // 切换内容类型
         function switchContentType(type) {
-            // 步骤1：重置所有类型标签的样式（移除蓝色选中状态）
+            // 重置所有类型标签的样式
             document.querySelectorAll('input[name="type"]').forEach(radio => {
                 const label = radio.closest('label');
                 label.classList.remove('border-primary', 'bg-primary/5');
                 label.classList.add('border-gray-200', 'hover:border-primary', 'hover:bg-primary/5');
             });
 
-            // 步骤2：给当前选中的类型标签添加蓝色选中状态
+            // 设置当前选中标签的样式
             const activeRadio = document.querySelector(`input[name="type"][value="${type}"]`);
             const activeLabel = activeRadio.closest('label');
             activeLabel.classList.remove('border-gray-200', 'hover:border-primary', 'hover:bg-primary/5');
             activeLabel.classList.add('border-primary', 'bg-primary/5');
 
-            // 原有逻辑：切换输入框显示（完全保留，未修改）
+            // 切换输入框显示
             el.urlInput.classList.add('hidden');
             el.textInput.classList.add('hidden');
             el.imageInput.classList.add('hidden');
@@ -351,8 +350,7 @@
 
         // 生成链接
         async function generateLink(event) {
-            event.preventDefault(); // 强制阻止默认提交行为
-            console.log('生成链接按钮被点击');
+            event.preventDefault();
 
             try {
                 // 获取表单数据
@@ -537,7 +535,7 @@
         // 切换历史记录显示状态
         function toggleHistoryDisplay() {
             historyExpanded = !historyExpanded;
-            loadHistory(); // 重新加载历史记录以应用新状态
+            loadHistory();
         }
 
         // 复制链接
@@ -577,7 +575,6 @@
 
             // 生成链接
             el.linkForm.addEventListener('submit', generateLink);
-            // 额外绑定click事件，确保按钮点击一定触发
             el.generateBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 generateLink(e);
@@ -591,16 +588,11 @@
             
             // 历史记录展开/收起
             el.toggleHistory.addEventListener('click', toggleHistoryDisplay);
-
-            console.log('所有事件绑定完成');
         }
 
         // 初始化
         document.addEventListener('DOMContentLoaded', () => {
             bindEvents();
-            console.log('页面初始化完成');
         });
     </script>
-
-
 </body></html>
