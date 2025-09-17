@@ -765,6 +765,16 @@
 
         // 绑定事件
         function bindEvents() {
+            // 添加关闭页面提示
+            window.addEventListener('beforeunload', function(e) {
+                // 取消事件
+                e.preventDefault();
+                // Chrome需要设置returnValue
+                e.returnValue = '';
+                // 返回一个非空字符串，大多数浏览器会显示这个消息
+                return '点击下方按钮可以关闭当前页面';
+            });
+            
             // 新增：建议收集表单事件
             el.submitFeedback.addEventListener('click', handleFeedbackSubmit);
             
