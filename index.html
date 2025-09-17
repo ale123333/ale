@@ -343,48 +343,50 @@
             }
         }
 
-        // 【本地缓存核心函数】定期同步本地缓存到数据库（每30秒）
-        function startSyncTimer() {
-            // 清除已有计时器
-            if (syncTimer) clearInterval(syncTimer);
-            
-            // 每30秒执行一次同步
-            syncTimer = setInterval(async () => {
-                if (!supabaseClient || Object.keys(viewsCache).length === 0) return;
+// 【本地缓存核心函数】定期同步本地缓存到数据库（每30秒）
+function startSyncTimer() {
+    // 清除已有计时器
+    if (syncTimer) clearInterval(syncTimer);
+    
+    // 每30秒执行一次同步
+    syncTimer = setInterval(async () => {
+        if (!supabaseClient || Object.keys(viewsCache).length === 0) return;
+        
+        console.log('开始定期同步本地缓存到数据库...');
+        for (const [linkId, cacheItem] of Object.entries(viewsCache)) {
+            try {
+                // 1. 获取数据库当前次数和最大次数
+                const { data: dbData } = await supabaseClient
+                    .from(TABLE_NAME)
+                    .select('current_views, max_views')
+                    .eq('id', linkId)
+                    .single();
                 
-                console.log('开始定期同步本地缓存到数据库...');
-                for (const [linkId, localViews] of Object.entries(viewsCache)) {
-                    try {
-                        // 1. 获取数据库当前次数
-                        const { data: dbData } = await supabaseClient
-                            .from(TABLE_NAME)
-                            .select('current_views, max_views')
-                            .eq('id', linkId)
-                            .single();
-                        
-                        // 2. 冲突处理：以数据库次数为准（避免多设备不同步）
-                        if (dbData.current_views !== localViews) {
-                            console.log(`检测到冲突，以数据库为准（${linkId}）: 本地=${localViews}, 数据库=${dbData.current_views}`);
-                            viewsCache[linkId] = dbData.current_views;
-                            saveLocalCache();
-                            
-                            // 若数据库已达最大次数，立即失效
-                            if (dbData.current_views >= dbData.max_views) {
-                                showExpiredContent();
-                            }
-                        } else {
-                            // 3. 无冲突则同步本地更新
-                            await supabaseClient
-                                .from(TABLE_NAME)
-                                .update({ current_views: localViews })
-                                .eq('id', linkId);
-                        }
-                    } catch (error) {
-                        console.error(`同步${linkId}失败，将重试:`, error);
+                // 2. 冲突处理：同步count和maxViews
+                if (dbData.current_views !== cacheItem.count || dbData.max_views !== cacheItem.maxViews) {
+                    console.log(`检测到冲突，以数据库为准（${linkId}）: 本地=${cacheItem.count}, 数据库=${dbData.current_views}`);
+                    viewsCache[linkId] = {
+                        count: dbData.current_views,
+                        maxViews: dbData.max_views // 同步最大次数
+                    };
+                    saveLocalCache();
+                    
+                    if (dbData.current_views >= dbData.max_views) {
+                        showExpiredContent();
                     }
+                } else {
+                    // 3. 无冲突则同步本地更新
+                    await supabaseClient
+                        .from(TABLE_NAME)
+                        .update({ current_views: cacheItem.count })
+                        .eq('id', linkId);
                 }
-            }, 30000); // 30秒同步一次
+            } catch (error) {
+                console.error(`同步${linkId}失败，将重试:`, error);
+            }
         }
+    }, 30000); // 30秒同步一次
+}
 
         // 密码验证
         function verifyPassword() {
@@ -662,85 +664,93 @@
             }
         }
 
-        // 【核心优化】加载链接内容（本地缓存+定期同步方案）
-        async function loadLinkContent(linkId) {
-            // 1. 初始化本地缓存和同步计时器
-            viewsCache = loadLocalCache();
-            startSyncTimer();
+// 【核心优化】加载链接内容（修复次数判断顺序）
+async function loadLinkContent(linkId) {
+    // 1. 初始化本地缓存和同步计时器
+    viewsCache = loadLocalCache();
+    startSyncTimer();
 
-            try {
-                // 2. 从数据库获取链接基本信息（含最大次数）
-                const { data: linkData, error: fetchError } = await supabaseClient
-                    .from(TABLE_NAME)
-                    .select('*')
-                    .eq('id', linkId)
-                    .single();
+    try {
+        // 2. 从数据库获取链接基本信息（含最大次数）
+        const { data: linkData, error: fetchError } = await supabaseClient
+            .from(TABLE_NAME)
+            .select('*')
+            .eq('id', linkId)
+            .single();
 
-                // 3. 处理数据库访问失败（离线场景）
-                if (fetchError) {
-                    console.log('数据库访问失败，使用本地缓存判断');
-                    const localViews = viewsCache[linkId] || 0;
-                    // 假设最大次数为3（离线时无法获取，可改为从本地缓存读取上次保存的max_views）
-                    const maxViews = 3; 
-                    
-                    if (localViews >= maxViews) {
-                        showExpiredContent();
-                        return;
-                    }
-                } else {
-                    // 4. 数据库可用时，先检查是否过期
-                    const now = new Date();
-                    if (now > new Date(linkData.expiry)) {
-                        showExpiredContent();
-                        return;
-                    }
-
-                    // 5. 初始化本地缓存（若首次访问）
-                    if (viewsCache[linkId] === undefined) {
-                        viewsCache[linkId] = linkData.current_views;
-                        saveLocalCache();
-                    }
-
-                    // 6. 本地优先判断：是否已达最大次数
-                    if (viewsCache[linkId] >= linkData.max_views) {
-                        showExpiredContent();
-                        return;
-                    }
-                }
-
-                // 7. 更新本地缓存（立即生效，无需等待网络）
-                viewsCache[linkId] = (viewsCache[linkId] || 0) + 1;
-                saveLocalCache();
-
-                // 8. 异步同步到数据库（不阻塞用户操作）
-                if (supabaseClient) {
-                    supabaseClient
-                        .from(TABLE_NAME)
-                        .update({ current_views: viewsCache[linkId] })
-                        .eq('id', linkId)
-                        .then(() => {
-                            console.log(`已同步到数据库：${linkId}，次数=${viewsCache[linkId]}`);
-                        })
-                        .catch(err => {
-                            console.error('同步到数据库失败（将在30秒后重试）:', err);
-                        });
-                }
-
-                // 9. 最终判断：是否超过最大次数
-                if (linkData && viewsCache[linkId] >= linkData.max_views) {
-                    showExpiredContent();
-                } else {
-                    // 10. 显示内容
-                    targetContentData = linkData;
-                    el.contentScreen.classList.remove('hidden');
-                    el.feedbackForm.classList.remove('hidden');
-                }
-
-            } catch (error) {
-                console.error('处理链接失败:', error);
+        // 3. 处理数据库访问失败（离线场景）
+        if (fetchError) {
+            console.log('数据库访问失败，使用本地缓存判断');
+            const cacheItem = viewsCache[linkId] || {};
+            const localViews = cacheItem.count || 0;
+            const maxViews = cacheItem.maxViews || 3;
+            
+            // 先判断未递增的次数是否已达上限
+            if (localViews >= maxViews) {
                 showExpiredContent();
+                return;
             }
+            // 允许访问后，再递增次数
+            cacheItem.count = localViews + 1;
+            viewsCache[linkId] = cacheItem;
+            saveLocalCache();
+            
+            targetContentData = { type: 'text', content: '离线模式：内容已缓存' };
+            el.contentScreen.classList.remove('hidden');
+            el.feedbackForm.classList.remove('hidden');
+            return;
         }
+
+        // 4. 数据库可用时，先检查是否过期
+        const now = new Date();
+        if (now > new Date(linkData.expiry)) {
+            showExpiredContent();
+            return;
+        }
+
+        // 5. 初始化本地缓存（保存count和maxViews）
+        if (!viewsCache[linkId]) {
+            viewsCache[linkId] = {
+                count: linkData.current_views,
+                maxViews: linkData.max_views // 保存最大次数到本地
+            };
+            saveLocalCache();
+        }
+
+        // 6. 关键：先判断未递增的次数是否已达上限
+        const currentCache = viewsCache[linkId];
+        if (currentCache.count >= currentCache.maxViews) {
+            showExpiredContent();
+            return;
+        }
+
+        // 7. 延迟递增：允许访问后再递增次数
+        currentCache.count += 1;
+        viewsCache[linkId] = currentCache;
+        saveLocalCache();
+
+        // 8. 异步同步到数据库
+        supabaseClient
+            .from(TABLE_NAME)
+            .update({ current_views: currentCache.count })
+            .eq('id', linkId)
+            .then(() => {
+                console.log(`已同步到数据库：${linkId}，次数=${currentCache.count}`);
+            })
+            .catch(err => {
+                console.error('同步到数据库失败（将在30秒后重试）:', err);
+            });
+
+        // 9. 显示内容
+        targetContentData = linkData;
+        el.contentScreen.classList.remove('hidden');
+        el.feedbackForm.classList.remove('hidden');
+
+    } catch (error) {
+        console.error('处理链接失败:', error);
+        showExpiredContent();
+    }
+}
 
         // 获取内容标题
         function getContentTitle(type) {
