@@ -170,9 +170,6 @@
                         <div id="image-input" class="hidden">
                             <input type="file" id="image-content" accept="image/*" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
                             <img id="image-preview" class="mt-3 max-w-full max-h-40 hidden">
-                            <div id="image-upload-progress" class="mt-2 h-1.5 bg-gray-200 rounded-full hidden">
-                                <div class="h-full bg-primary rounded-full transition-all" style="width: 0%"></div>
-                            </div>
                         </div>
                     </div>
 
@@ -232,37 +229,40 @@
         let supabaseClient = null;
         const VALID_PASSWORD = '007'; // 工具访问密码
         const TABLE_NAME = 'link_history'; // 数据表名
-        const STORAGE_BUCKET = 'link-images'; // 图片存储桶名
         let historyExpanded = false; 
         let targetLinkId = '';
         let targetContentData = null;
         
-        // 本地缓存相关（优化后）
+        // 本地缓存相关（核心新增）
         const LOCAL_STORAGE_KEY = 'link_views_cache'; // 本地存储键名
-        let viewsCache = {}; // 精简缓存对象 { linkId: { c: 当前次数, m: 最大次数 } }
+        let viewsCache = {}; // 内存缓存对象 { linkId: 当前次数 }
         let syncTimer = null; // 定期同步计时器
 
         // DOM元素
         const el = {
-            // 新增图片上传进度条
-            imageUploadProgress: document.getElementById('image-upload-progress'),
-            // 其他元素保持不变
+            // 建议收集表单元素
             feedbackForm: document.getElementById('feedback-form'),
             gameName: document.getElementById('game-name'),
             gameServer: document.getElementById('game-server'),
             gameFeedback: document.getElementById('game-feedback'),
             submitFeedback: document.getElementById('submit-feedback'),
             feedbackError: document.getElementById('feedback-error'),
+            
+            // 内容展示界面
             contentScreen: document.getElementById('content-screen'),
             contentTitle: document.getElementById('content-title'),
             contentContainer: document.getElementById('content-container'),
             contentExpired: document.getElementById('content-expired'),
             backToTool: document.getElementById('back-to-tool'),
+            
+            // 密码界面
             passwordScreen: document.getElementById('password-screen'),
             passwordInput: document.getElementById('password'),
             togglePwd: document.getElementById('toggle-pwd'),
             verifyBtn: document.getElementById('verify-btn'),
             pwdError: document.getElementById('pwd-error'),
+            
+            // 主界面
             mainScreen: document.getElementById('main-screen'),
             logoutBtn: document.getElementById('logout-btn'),
             linkForm: document.getElementById('link-form'),
@@ -275,6 +275,8 @@
             historyEmpty: document.getElementById('history-empty'),
             historyList: document.getElementById('history-list'),
             toggleHistory: document.getElementById('toggle-history'),
+            
+            // 内容类型相关
             typeRadios: document.querySelectorAll('input[name="type"]'),
             contentLabel: document.getElementById('content-label'),
             urlInput: document.getElementById('url-input'),
@@ -286,12 +288,14 @@
             imagePreview: document.getElementById('image-preview'),
             expiryInput: document.getElementById('expiry'),
             viewsInput: document.getElementById('views'),
+            
+            // 提示框
             toast: document.getElementById('toast'),
             toastIcon: document.getElementById('toast-icon'),
             toastText: document.getElementById('toast-text')
         };
 
-        // 显示提示框（保持不变）
+        // 显示提示框
         function showToast(message, isError = false) {
             el.toastText.textContent = message;
             el.toastIcon.className = isError ? 'fa fa-exclamation-circle mr-2 text-red-500' : 'fa fa-check-circle mr-2 text-green-500';
@@ -302,7 +306,7 @@
             }, 3000);
         }
 
-        // 1. 优化云端数据库交互 - 并行化初始化
+        // 初始化Supabase
         function initSupabase() {
             return new Promise((resolve, reject) => {
                 try {
@@ -319,51 +323,70 @@
             });
         }
 
-        // 2. 简化本地缓存逻辑
+        // 【本地缓存核心函数】从localStorage加载缓存
         function loadLocalCache() {
             try {
                 const cached = localStorage.getItem(LOCAL_STORAGE_KEY);
                 return cached ? JSON.parse(cached) : {};
             } catch (error) {
                 console.error('加载本地缓存失败:', error);
-                return {};
+                return {}; // 失败时返回空对象
             }
         }
 
+        // 【本地缓存核心函数】保存缓存到localStorage
         function saveLocalCache() {
             try {
-                // 只保存必要字段，减少存储体积
                 localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(viewsCache));
             } catch (error) {
                 console.error('保存本地缓存失败:', error);
             }
         }
 
-        // 延迟启动同步计时器，避免初始化阻塞
+        // 【本地缓存核心函数】定期同步本地缓存到数据库（每30秒）
         function startSyncTimer() {
+            // 清除已有计时器
             if (syncTimer) clearInterval(syncTimer);
             
-            // 延迟1秒启动，优先保证页面渲染
-            setTimeout(() => {
-                syncTimer = setInterval(async () => {
-                    if (!supabaseClient || Object.keys(viewsCache).length === 0) return;
-                    
-                    console.log('开始定期同步本地缓存到数据库...');
-                    for (const [linkId, cacheItem] of Object.entries(viewsCache)) {
-                        try {
+            // 每30秒执行一次同步
+            syncTimer = setInterval(async () => {
+                if (!supabaseClient || Object.keys(viewsCache).length === 0) return;
+                
+                console.log('开始定期同步本地缓存到数据库...');
+                for (const [linkId, localViews] of Object.entries(viewsCache)) {
+                    try {
+                        // 1. 获取数据库当前次数
+                        const { data: dbData } = await supabaseClient
+                            .from(TABLE_NAME)
+                            .select('current_views, max_views')
+                            .eq('id', linkId)
+                            .single();
+                        
+                        // 2. 冲突处理：以数据库次数为准（避免多设备不同步）
+                        if (dbData.current_views !== localViews) {
+                            console.log(`检测到冲突，以数据库为准（${linkId}）: 本地=${localViews}, 数据库=${dbData.current_views}`);
+                            viewsCache[linkId] = dbData.current_views;
+                            saveLocalCache();
+                            
+                            // 若数据库已达最大次数，立即失效
+                            if (dbData.current_views >= dbData.max_views) {
+                                showExpiredContent();
+                            }
+                        } else {
+                            // 3. 无冲突则同步本地更新
                             await supabaseClient
                                 .from(TABLE_NAME)
-                                .update({ current_views: cacheItem.c })
+                                .update({ current_views: localViews })
                                 .eq('id', linkId);
-                        } catch (error) {
-                            console.error(`同步${linkId}失败，将重试:`, error);
                         }
+                    } catch (error) {
+                        console.error(`同步${linkId}失败，将重试:`, error);
                     }
-                }, 30000); // 30秒同步一次
-            }, 1000);
+                }
+            }, 30000); // 30秒同步一次
         }
 
-        // 密码验证（保持不变）
+        // 密码验证
         function verifyPassword() {
             const password = el.passwordInput.value.trim();
             if (!password) {
@@ -386,14 +409,14 @@
             }
         }
 
-        // 切换密码显示（保持不变）
+        // 切换密码显示
         function togglePassword() {
             const type = el.passwordInput.type === 'password' ? 'text' : 'password';
             el.passwordInput.type = type;
             el.togglePwd.innerHTML = type === 'password' ? '<i class="fa fa-eye-slash"></i>' : '<i class="fa fa-eye"></i>';
         }
 
-        // 切换内容类型（保持不变）
+        // 切换内容类型
         function switchContentType(type) {
             document.querySelectorAll('input[name="type"]').forEach(radio => {
                 const label = radio.closest('label');
@@ -426,7 +449,7 @@
             }
         }
 
-        // 预览图片（保持不变）
+        // 预览图片
         function previewImage(event) {
             const file = event.target.files[0];
             if (!file) {
@@ -442,56 +465,7 @@
             reader.readAsDataURL(file);
         }
 
-        // 3. 优化图片类内容的存储与加载 - 上传到存储桶
-        async function uploadImageToStorage(file) {
-            return new Promise((resolve, reject) => {
-                // 显示进度条
-                el.imageUploadProgress.classList.remove('hidden');
-                el.imageUploadProgress.querySelector('div').style.width = '0%';
-
-                // 生成唯一文件名
-                const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 10)}.${file.name.split('.').pop()}`;
-                
-                // 上传文件
-                const { data, error } = supabaseClient
-                    .storage
-                    .from(STORAGE_BUCKET)
-                    .upload(fileName, file, {
-                        cacheControl: '3600',
-                        upsert: false
-                    });
-
-                // 监听上传进度
-                const uploadProgress = supabaseClient.storage.from(STORAGE_BUCKET).upload(fileName, file)
-                    .then(({ data }) => {
-                        // 获取公共访问URL
-                        const { data: urlData } = supabaseClient
-                            .storage
-                            .from(STORAGE_BUCKET)
-                            .getPublicUrl(data.path);
-                            
-                        el.imageUploadProgress.classList.add('hidden');
-                        resolve(urlData.publicUrl);
-                    })
-                    .catch((err) => {
-                        el.imageUploadProgress.classList.add('hidden');
-                        reject(err);
-                    });
-
-                // 模拟进度更新（实际项目中可使用官方进度监听）
-                let progress = 0;
-                const progressInterval = setInterval(() => {
-                    if (progress < 90) {
-                        progress += 5;
-                        el.imageUploadProgress.querySelector('div').style.width = `${progress}%`;
-                    } else {
-                        clearInterval(progressInterval);
-                    }
-                }, 300);
-            });
-        }
-
-        // 生成链接（优化图片处理）
+        // 生成链接
         async function generateLink(event) {
             event.preventDefault();
 
@@ -510,8 +484,11 @@
                 } else if (type === 'image') {
                     const file = el.imageContent.files[0];
                     if (!file) throw new Error('请选择图片');
-                    // 上传图片到存储桶并获取URL
-                    content = await uploadImageToStorage(file);
+                    content = await new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onload = (e) => resolve(e.target.result);
+                        reader.readAsDataURL(file);
+                    });
                 }
 
                 // 生成唯一链接ID
@@ -525,7 +502,7 @@
                     type: type,
                     expiry: new Date(Date.now() + expiry * 60000).toISOString(),
                     max_views: maxViews,
-                    current_views: 0,
+                    current_views: 0, // 初始访问次数
                     created_at: new Date().toISOString()
                 };
 
@@ -553,7 +530,7 @@
             }
         }
 
-        // 加载历史记录（保持不变）
+        // 加载历史记录
         async function loadHistory() {
             try {
                 let links = [];
@@ -632,7 +609,7 @@
             }
         }
 
-        // 更新切换按钮文本（保持不变）
+        // 更新切换按钮文本
         function updateToggleButtonText() {
             if (historyExpanded) {
                 el.toggleHistory.innerHTML = '<i class="fa fa-chevron-up mr-1"></i>收起';
@@ -641,13 +618,13 @@
             }
         }
 
-        // 切换历史记录显示状态（保持不变）
+        // 切换历史记录显示状态
         function toggleHistoryDisplay() {
             historyExpanded = !historyExpanded;
             loadHistory();
         }
 
-        // 复制链接（保持不变）
+        // 复制链接
         function copyLink() {
             navigator.clipboard.writeText(el.generatedLink.value)
                 .then(() => showToast('链接已复制'))
@@ -657,13 +634,13 @@
                 });
         }
 
-        // 解析URL参数获取链接ID（保持不变）
+        // 解析URL参数获取链接ID
         function getLinkIdFromUrl() {
             const params = new URLSearchParams(window.location.search);
             return params.get('id');
         }
 
-        // 提交建议并显示目标内容（保持不变）
+        // 提交建议并显示目标内容
         function handleFeedbackSubmit() {
             const gameName = el.gameName.value.trim();
             const gameServer = el.gameServer.value.trim();
@@ -685,97 +662,87 @@
             }
         }
 
-        // 1. 优化云端数据库交互 - 异步查询+本地缓存优先
+        // 【核心优化】加载链接内容（本地缓存+定期同步方案）
         async function loadLinkContent(linkId) {
-            // 先显示加载状态
-            el.contentScreen.classList.remove('hidden');
-            el.contentContainer.innerHTML = '<div class="text-center"><i class="fa fa-circle-o-notch fa-spin text-2xl text-primary"></i><p class="mt-2">加载中...</p></div>';
-
-            // 初始化本地缓存
+            // 1. 初始化本地缓存和同步计时器
             viewsCache = loadLocalCache();
-            
+            startSyncTimer();
+
             try {
-                // 1. 先检查本地缓存
-                const localCache = viewsCache[linkId];
-                if (localCache) {
-                    // 本地缓存判断已过期
-                    if (localCache.c >= localCache.m) {
+                // 2. 从数据库获取链接基本信息（含最大次数）
+                const { data: linkData, error: fetchError } = await supabaseClient
+                    .from(TABLE_NAME)
+                    .select('*')
+                    .eq('id', linkId)
+                    .single();
+
+                // 3. 处理数据库访问失败（离线场景）
+                if (fetchError) {
+                    console.log('数据库访问失败，使用本地缓存判断');
+                    const localViews = viewsCache[linkId] || 0;
+                    // 假设最大次数为3（离线时无法获取，可改为从本地缓存读取上次保存的max_views）
+                    const maxViews = 3; 
+                    
+                    if (localViews >= maxViews) {
+                        showExpiredContent();
+                        return;
+                    }
+                } else {
+                    // 4. 数据库可用时，先检查是否过期
+                    const now = new Date();
+                    if (now > new Date(linkData.expiry)) {
+                        showExpiredContent();
+                        return;
+                    }
+
+                    // 5. 初始化本地缓存（若首次访问）
+                    if (viewsCache[linkId] === undefined) {
+                        viewsCache[linkId] = linkData.current_views;
+                        saveLocalCache();
+                    }
+
+                    // 6. 本地优先判断：是否已达最大次数
+                    if (viewsCache[linkId] >= linkData.max_views) {
                         showExpiredContent();
                         return;
                     }
                 }
 
-                // 2. 异步查询数据库（不阻塞UI）
-                let linkData = null;
-                const { data, error } = await supabaseClient
-                    .from(TABLE_NAME)
-                    .select('id, content, type, expiry, max_views, current_views') // 只查询必要字段
-                    .eq('id', linkId)
-                    .single();
-
-                if (error) throw error;
-                linkData = data;
-
-                // 3. 检查是否过期
-                const now = new Date();
-                if (now > new Date(linkData.expiry)) {
-                    showExpiredContent();
-                    return;
-                }
-
-                // 4. 初始化缓存
-                if (!viewsCache[linkId]) {
-                    viewsCache[linkId] = {
-                        c: linkData.current_views, // 精简字段名
-                        m: linkData.max_views
-                    };
-                    saveLocalCache();
-                }
-
-                // 5. 检查访问次数
-                const currentCache = viewsCache[linkId];
-                if (currentCache.c >= currentCache.m) {
-                    showExpiredContent();
-                    return;
-                }
-
-                // 6. 更新访问次数（本地先更新，后台同步）
-                currentCache.c += 1;
-                viewsCache[linkId] = currentCache;
+                // 7. 更新本地缓存（立即生效，无需等待网络）
+                viewsCache[linkId] = (viewsCache[linkId] || 0) + 1;
                 saveLocalCache();
 
-                // 异步同步到数据库，不阻塞UI
-                supabaseClient
-                    .from(TABLE_NAME)
-                    .update({ current_views: currentCache.c })
-                    .eq('id', linkId)
-                    .catch(err => console.error('后台同步失败:', err));
+                // 8. 异步同步到数据库（不阻塞用户操作）
+                if (supabaseClient) {
+                    supabaseClient
+                        .from(TABLE_NAME)
+                        .update({ current_views: viewsCache[linkId] })
+                        .eq('id', linkId)
+                        .then(() => {
+                            console.log(`已同步到数据库：${linkId}，次数=${viewsCache[linkId]}`);
+                        })
+                        .catch(err => {
+                            console.error('同步到数据库失败（将在30秒后重试）:', err);
+                        });
+                }
 
-                // 7. 显示内容
-                targetContentData = linkData;
-                el.contentContainer.innerHTML = ''; // 清空加载状态
-                el.feedbackForm.classList.remove('hidden');
+                // 9. 最终判断：是否超过最大次数
+                if (linkData && viewsCache[linkId] >= linkData.max_views) {
+                    showExpiredContent();
+                } else {
+                    // 10. 显示内容
+                    targetContentData = linkData;
+                    el.contentScreen.classList.remove('hidden');
+                    el.feedbackForm.classList.remove('hidden');
+                }
 
             } catch (error) {
                 console.error('处理链接失败:', error);
-                // 即使数据库查询失败，也尝试用本地缓存显示
-                if (localCache) {
-                    targetContentData = {
-                        type: 'text',
-                        content: '离线模式：内容已缓存'
-                    };
-                    el.contentContainer.innerHTML = '';
-                    el.feedbackForm.classList.remove('hidden');
-                } else {
-                    showExpiredContent();
-                }
-            } finally {
-                // 最后启动同步计时器
-                startSyncTimer();
+                showExpiredContent();
             }
         }
 
-        // 获取内容标题（保持不变）
+        // 获取内容标题
         function getContentTitle(type) {
             const titles = {
                 'url': '网址内容',
@@ -785,7 +752,7 @@
             return titles[type] || '内容预览';
         }
 
-        // 根据类型生成内容HTML（保持不变）
+        // 根据类型生成内容HTML
         function getContentHtml(linkData) {
             switch (linkData.type) {
                 case 'url':
@@ -811,7 +778,7 @@
             }
         }
 
-        // 显示链接过期信息（保持不变）
+        // 显示链接过期信息
         function showExpiredContent() {
             el.feedbackForm.classList.add('hidden');
             el.contentScreen.classList.remove('hidden');
@@ -820,7 +787,7 @@
             el.backToTool.classList.add('hidden');
         }
 
-        // 绑定事件（保持不变）
+        // 绑定事件
         function bindEvents() {
             el.submitFeedback.addEventListener('click', handleFeedbackSubmit);
             el.verifyBtn.addEventListener('click', verifyPassword);
@@ -857,7 +824,7 @@
             });
         }
 
-        // 4. 并行化前端初始化流程
+        // 初始化
         document.addEventListener('DOMContentLoaded', () => {
             bindEvents();
             
@@ -865,12 +832,9 @@
             const linkId = getLinkIdFromUrl();
             if (linkId) {
                 targetLinkId = linkId;
-                // 并行执行：加载缓存 + 初始化Supabase
-                const cachePromise = Promise.resolve(loadLocalCache());
-                const supabasePromise = initSupabase();
-                
-                // 两者完成后再加载内容
-                Promise.all([cachePromise, supabasePromise]).then(() => {
+                // 初始化缓存
+                viewsCache = loadLocalCache();
+                initSupabase().then(() => {
                     loadLinkContent(linkId);
                 });
             } else {
@@ -881,12 +845,14 @@
         // 页面关闭时最后一次同步
         window.addEventListener('beforeunload', () => {
             if (supabaseClient && Object.keys(viewsCache).length > 0) {
+                // 同步所有缓存到数据库（同步操作，确保执行）
                 Object.entries(viewsCache).forEach(async ([linkId, views]) => {
                     try {
                         await supabaseClient
                             .from(TABLE_NAME)
-                            .update({ current_views: views.c })
+                            .update({ current_views: views })
                             .eq('id', linkId);
+                        console.log(`页面关闭时同步成功：${linkId}`);
                     } catch (error) {
                         console.error(`页面关闭时同步失败：${linkId}`, error);
                     }
