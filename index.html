@@ -441,7 +441,7 @@
                 const linkId = Math.random().toString(36).substring(2, 12);
                 const linkUrl = `${window.location.origin}${window.location.pathname}?id=${linkId}`;
 
-                // 准备链接数据
+                // 准备链接数据 - 新增version字段用于乐观锁控制
                 const linkData = {
                     id: linkId,
                     content: content,
@@ -450,7 +450,8 @@
                     max_views: maxViews,
                     current_views: 0, // 初始访问次数
                     created_at: new Date().toISOString(),
-                    offline: offlineMode
+                    offline: offlineMode,
+                    version: 0 // 版本号，用于解决并发更新问题
                 };
 
                 // 保存数据
@@ -670,11 +671,23 @@
                     return;
                 }
 
+                // 记录当前的访问次数和版本号（用于乐观锁验证）
+                const oldViews = linkData.current_views;
+                const oldVersion = linkData.version || 0;
+
                 // 先更新访问次数，再检查是否达到最大值（修复访问次数限制问题）
                 linkData.current_views++;
-                await updateLinkViews(linkData);
+                linkData.version = oldVersion + 1;
 
-                // 检查访问次数次数是否已达最大值
+                // 执行带乐观锁的更新操作，仅当数据库中数据与获取时一致才更新
+                const updateSuccess = await updateLinkViews(linkData, oldViews, oldVersion);
+                if (!updateSuccess) {
+                    // 更新失败，说明有并发访问，直接显示过期
+                    showExpiredContent();
+                    return;
+                }
+
+                // 检查访问次数是否已达最大值
                 if (linkData.current_views >= linkData.max_views) {
                     showExpiredContent();
                     return;
@@ -695,26 +708,40 @@
             }
         }
 
-        // 更新链接访问次数
-        async function updateLinkViews(linkData) {
+        // 更新链接访问次数（新增乐观锁参数）
+        async function updateLinkViews(linkData, oldViews, oldVersion) {
             try {
                 if (linkData.offline) {
                     // 更新本地存储
                     let localLinks = JSON.parse(localStorage.getItem('linkHistory') || '[]');
                     const index = localLinks.findIndex(link => link.id === linkData.id);
-                    if (index !== -1) {
+                    if (index !== -1 && localLinks[index].current_views === oldViews) {
                         localLinks[index] = linkData;
                         localStorage.setItem('linkHistory', JSON.stringify(localLinks));
+                        return true;
                     }
+                    return false;
                 } else if (supabaseClient) {
-                    // 更新云端数据
-                    await supabaseClient
+                    // 更新云端数据 - 添加乐观锁条件：仅当current_views和version与获取时一致才更新
+                    const { error, count } = await supabaseClient
                         .from(TABLE_NAME)
-                        .update({ current_views: linkData.current_views })
-                        .eq('id', linkData.id);
+                        .update({ 
+                            current_views: linkData.current_views,
+                            version: linkData.version
+                        })
+                        .eq('id', linkData.id)
+                        .eq('current_views', oldViews) // 确保访问次数未被其他请求修改
+                        .eq('version', oldVersion) // 确保版本号未被其他请求修改
+                        .select('*', { count: 'exact' });
+
+                    if (error) throw error;
+                    // count > 0 表示更新成功，否则失败（有并发修改）
+                    return count > 0;
                 }
+                return false;
             } catch (error) {
                 console.error('更新访问次数失败:', error);
+                return false;
             }
         }
 
@@ -765,16 +792,6 @@
 
         // 绑定事件
         function bindEvents() {
-            // 添加关闭页面提示
-            window.addEventListener('beforeunload', function(e) {
-                // 取消事件
-                e.preventDefault();
-                // Chrome需要设置returnValue
-                e.returnValue = '';
-                // 返回一个非空字符串，大多数浏览器会显示这个消息
-                return '点击下方按钮可以关闭当前页面';
-            });
-            
             // 新增：建议收集表单事件
             el.submitFeedback.addEventListener('click', handleFeedbackSubmit);
             
