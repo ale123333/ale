@@ -623,14 +623,11 @@
             // 隐藏表单
             el.feedbackForm.classList.add('hidden');
             
-            // 如果是URL类型，直接打开链接
+            // 如果是URL类型，直接打开链接并关闭当前页面
             if (targetContentData.type === 'url') {
                 window.open(targetContentData.content, '_blank');
-                // 显示提示信息
-                el.contentTitle.textContent = "链接已打开";
-                el.contentContainer.innerHTML = `<p>链接已在新窗口打开，如果没有自动打开，请点击下方链接：<br>
-                    <a href="${targetContentData.content}" target="_blank" class="text-primary hover:underline">${targetContentData.content}</a>
-                </p>`;
+                // 关闭当前页面
+                window.close();
             } else {
                 // 其他类型显示内容
                 el.contentTitle.textContent = getContentTitle(targetContentData.type);
