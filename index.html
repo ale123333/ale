@@ -688,7 +688,7 @@
                 }
 
                 // 检查访问次数是否已达最大值
-                if (linkData.current_views >= linkData.max_views) {
+                if (linkData.current_views > linkData.max_views) {
                     showExpiredContent();
                     return;
                 }
@@ -862,3 +862,4 @@
         });
     </script>
 </body></html>
+
