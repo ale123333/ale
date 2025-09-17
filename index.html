@@ -185,14 +185,6 @@
                         </div>
                     </div>
 
-                    <!-- 存储模式 -->
-                    <div class="flex items-center">
-                        <input type="checkbox" id="offline-mode" class="w-4 h-4 text-primary">
-                        <label for="offline-mode" class="ml-2 text-sm text-gray-700">
-                            离线模式（仅本地存储）
-                        </label>
-                    </div>
-
                     <!-- 生成按钮 -->
                     <button type="submit" id="generate-btn" class="w-full bg-primary text-white py-3 rounded-lg font-medium btn-effect">
                         <i class="fa fa-magic mr-2"></i>生成链接
@@ -293,7 +285,6 @@
             imagePreview: document.getElementById('image-preview'),
             expiryInput: document.getElementById('expiry'),
             viewsInput: document.getElementById('views'),
-            offlineMode: document.getElementById('offline-mode'),
             
             // 提示框
             toast: document.getElementById('toast'),
@@ -314,7 +305,7 @@
 
         // 初始化Supabase - 返回Promise
         function initSupabase() {
-            return new Promise((resolve) => {
+            return new Promise((resolve, reject) => {
                 try {
                     const url = 'https://wjsjxwfdwkdxwybfnifz.supabase.co';
                     const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indqc2p4d2Zkd2tkeHd5YmZuaWZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3MzQxNDcsImV4cCI6MjA3MzMxMDE0N30.lXAqyRAfoHbZzdcuXyxG7vmjwsg1Pp4tT6HUE68zKTQ';
@@ -323,9 +314,8 @@
                     resolve();
                 } catch (error) {
                     console.error('Supabase初始化失败:', error);
-                    showToast('云端服务初始化失败，将使用本地模式', true);
-                    el.offlineMode.checked = true;
-                    resolve();
+                    showToast('云端服务初始化失败，无法使用工具', true);
+                    reject(error);
                 }
             });
         }
@@ -341,8 +331,7 @@
             if (password === VALID_PASSWORD) {
                 el.passwordScreen.classList.add('hidden');
                 el.mainScreen.classList.remove('hidden');
-                initSupabase();
-                loadHistory();
+                initSupabase().then(loadHistory);
                 return true;
             } else {
                 el.pwdError.classList.remove('hidden');
@@ -418,7 +407,6 @@
                 const type = document.querySelector('input[name="type"]:checked').value;
                 const expiry = parseInt(el.expiryInput.value);
                 const maxViews = parseInt(el.viewsInput.value);
-                const offlineMode = el.offlineMode.checked;
 
                 let content;
                 if (type === 'url') {
@@ -441,7 +429,7 @@
                 const linkId = Math.random().toString(36).substring(2, 12);
                 const linkUrl = `${window.location.origin}${window.location.pathname}?id=${linkId}`;
 
-                // 准备链接数据 - 新增version字段用于乐观锁控制
+                // 准备链接数据
                 const linkData = {
                     id: linkId,
                     content: content,
@@ -449,21 +437,17 @@
                     expiry: new Date(Date.now() + expiry * 60000).toISOString(),
                     max_views: maxViews,
                     current_views: 0, // 初始访问次数
-                    created_at: new Date().toISOString(),
-                    offline: offlineMode,
-                    version: 0 // 版本号，用于解决并发更新问题
+                    created_at: new Date().toISOString()
                 };
 
-                // 保存数据
-                if (offlineMode) {
-                    saveToLocalStorage(linkData);
-                } else if (supabaseClient) {
+                // 保存数据（仅云端）
+                if (supabaseClient) {
                     const { error } = await supabaseClient
                         .from(TABLE_NAME)
                         .insert([linkData]);
                     if (error) throw error;
                 } else {
-                    throw new Error('无法连接到云端，请启用离线模式');
+                    throw new Error('无法连接到云端，请稍后重试');
                 }
 
                 // 显示结果
@@ -480,28 +464,12 @@
             }
         }
 
-        // 保存到本地存储
-        function saveToLocalStorage(data) {
-            try {
-                let history = JSON.parse(localStorage.getItem('linkHistory') || '[]');
-                history.unshift(data);
-                if (history.length > 20) history = history.slice(0, 20);
-                localStorage.setItem('linkHistory', JSON.stringify(history));
-            } catch (error) {
-                console.error('本地存储失败:', error);
-                throw new Error('本地存储失败');
-            }
-        }
-
         // 加载历史记录
         async function loadHistory() {
             try {
                 let links = [];
-                const offlineMode = el.offlineMode.checked;
 
-                if (offlineMode) {
-                    links = JSON.parse(localStorage.getItem('linkHistory') || '[]');
-                } else if (supabaseClient) {
+                if (supabaseClient) {
                     const { data, error } = await supabaseClient
                         .from(TABLE_NAME)
                         .select('*')
@@ -541,9 +509,6 @@
                                 ${typeIcon}
                                 <span class="text-sm text-gray-500">${new Date(link.created_at).toLocaleString()}</span>
                             </div>
-                            <span class="text-xs px-2 py-1 rounded-full ${link.offline ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}">
-                                ${link.offline ? '本地' : '云端'}
-                            </span>
                         </div>
                         <div class="mt-2 flex gap-2">
                             <input type="text" value="${window.location.origin}${window.location.pathname}?id=${link.id}" readonly 
@@ -640,15 +605,9 @@
         async function loadLinkContent(linkId) {
             try {
                 let linkData = null;
-                const offlineMode = el.offlineMode.checked;
 
-                // 从本地或云端获取链接数据
-                if (localStorage.getItem('linkHistory')) {
-                    const localLinks = JSON.parse(localStorage.getItem('linkHistory') || '[]');
-                    linkData = localLinks.find(link => link.id === linkId);
-                }
-
-                if (!linkData && supabaseClient) {
+                // 从云端获取链接数据
+                if (supabaseClient) {
                     const { data } = await supabaseClient
                         .from(TABLE_NAME)
                         .select('*')
@@ -671,24 +630,12 @@
                     return;
                 }
 
-                // 记录当前的访问次数和版本号（用于乐观锁验证）
-                const oldViews = linkData.current_views;
-                const oldVersion = linkData.version || 0;
-
                 // 先更新访问次数，再检查是否达到最大值（修复访问次数限制问题）
                 linkData.current_views++;
-                linkData.version = oldVersion + 1;
+                await updateLinkViews(linkData);
 
-                // 执行带乐观锁的更新操作，仅当数据库中数据与获取时一致才更新
-                const updateSuccess = await updateLinkViews(linkData, oldViews, oldVersion);
-                if (!updateSuccess) {
-                    // 更新失败，说明有并发访问，直接显示过期
-                    showExpiredContent();
-                    return;
-                }
-
-                // 检查访问次数是否已达最大值
-                if (linkData.current_views > linkData.max_views) {
+                // 检查访问次数次数是否已达最大值
+                if (linkData.current_views >= linkData.max_views) {
                     showExpiredContent();
                     return;
                 }
@@ -708,40 +655,18 @@
             }
         }
 
-        // 更新链接访问次数（新增乐观锁参数）
-        async function updateLinkViews(linkData, oldViews, oldVersion) {
+        // 更新链接访问次数
+        async function updateLinkViews(linkData) {
             try {
-                if (linkData.offline) {
-                    // 更新本地存储
-                    let localLinks = JSON.parse(localStorage.getItem('linkHistory') || '[]');
-                    const index = localLinks.findIndex(link => link.id === linkData.id);
-                    if (index !== -1 && localLinks[index].current_views === oldViews) {
-                        localLinks[index] = linkData;
-                        localStorage.setItem('linkHistory', JSON.stringify(localLinks));
-                        return true;
-                    }
-                    return false;
-                } else if (supabaseClient) {
-                    // 更新云端数据 - 添加乐观锁条件：仅当current_views和version与获取时一致才更新
-                    const { error, count } = await supabaseClient
+                if (supabaseClient) {
+                    // 更新云端数据
+                    await supabaseClient
                         .from(TABLE_NAME)
-                        .update({ 
-                            current_views: linkData.current_views,
-                            version: linkData.version
-                        })
-                        .eq('id', linkData.id)
-                        .eq('current_views', oldViews) // 确保访问次数未被其他请求修改
-                        .eq('version', oldVersion) // 确保版本号未被其他请求修改
-                        .select('*', { count: 'exact' });
-
-                    if (error) throw error;
-                    // count > 0 表示更新成功，否则失败（有并发修改）
-                    return count > 0;
+                        .update({ current_views: linkData.current_views })
+                        .eq('id', linkData.id);
                 }
-                return false;
             } catch (error) {
                 console.error('更新访问次数失败:', error);
-                return false;
             }
         }
 
@@ -828,9 +753,6 @@
             // 复制链接
             el.copyBtn.addEventListener('click', copyLink);
 
-            // 离线模式切换
-            el.offlineMode.addEventListener('change', loadHistory);
-            
             // 历史记录展开/收起
             el.toggleHistory.addEventListener('click', toggleHistoryDisplay);
 
@@ -862,4 +784,3 @@
         });
     </script>
 </body></html>
-
