@@ -78,7 +78,7 @@
         </div>
         <div id="content-expired" class="hidden w-full max-w-2xl bg-white rounded-xl shadow-lg p-8 text-center text-gray-500">
             <i class="fa fa-exclamation-triangle text-4xl mb-3 text-yellow-500"></i>
-            <p class="text-lg">链接已过期或已达最大访问次数</p>
+            <p class="text-lg">该链接已失效，感谢您的反馈！</p>
             <button id="back-to-tool" class="mt-4 px-4 py-2 bg-primary text-white rounded-lg btn-effect">
                 返回工具
             </button>
@@ -677,7 +677,7 @@
                 linkData.current_views++;
                 await updateLinkViews(linkData);
 
-                // 检查访问次数是否已达最大值
+                // 检查访问次数次数是否已达最大值
                 if (linkData.current_views >= linkData.max_views) {
                     showExpiredContent();
                     return;
@@ -757,12 +757,13 @@
             }
         }
 
-        // 显示链接过期信息
+        // 显示链接过期信息（修改：隐藏返回工具按钮）
         function showExpiredContent() {
-            el.feedbackForm.classList.add('hidden'); // 新增：隐藏建议表单
+            el.feedbackForm.classList.add('hidden'); // 隐藏建议表单
             el.contentScreen.classList.remove('hidden');
             el.contentContainer.parentElement.classList.add('hidden');
             el.contentExpired.classList.remove('hidden');
+            el.backToTool.classList.add('hidden'); // 新增：隐藏返回工具按钮
         }
 
         // 绑定事件
@@ -809,7 +810,7 @@
             // 历史记录展开/收起
             el.toggleHistory.addEventListener('click', toggleHistoryDisplay);
 
-            // 内容展示界面事件
+            // 内容展示界面事件（原返回工具逻辑保留，但showExpiredContent中已隐藏该按钮）
             el.backToTool.addEventListener('click', () => {
                 el.contentScreen.classList.add('hidden');
                 el.contentExpired.classList.add('hidden');
