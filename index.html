@@ -4,7 +4,8 @@
     <title>链接生成工具</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- 延迟加载非关键JS -->
+    <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -18,26 +19,22 @@
         }
     </script>
     <style type="text/tailwindcss">
-       @layer utilities {
-    /* 新增：限制提示框最大宽度 */
-    #toast {
-        max-w-xs; /* 限制宽度为20rem，可按需改为max-w-sm（24rem）等 */
-    }
-    .btn-effect {
-        @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5;
-    }
-    .input-focus {
-        @apply focus:ring-2 focus:ring-primary focus:border-primary outline-none;
-    }
-    .shake {
-        animation: shake 0.5s;
-    }
-    @keyframes shake {
-        0%, 100% { transform: translateX(0); }
-        10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-        20%, 40%, 60%, 80% { transform: translateX(5px); }
-    }
-}
+        @layer utilities {
+            .btn-effect {
+                @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5;
+            }
+            .input-focus {
+                @apply focus:ring-2 focus:ring-primary focus:border-primary outline-none;
+            }
+            .shake {
+                animation: shake 0.5s;
+            }
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+                20%, 40%, 60%, 80% { transform: translateX(5px); }
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen font-sans">
@@ -76,9 +73,9 @@
 
     <!-- 链接内容展示界面 -->
     <div id="content-screen" class="hidden min-h-screen flex flex-col items-center justify-center p-4">
-        <div class="w-full max-w-2xl bg-white rounded-xl shadow-lg p-6 mb-8">
+        <div id="content-wrapper" class="w-full max-w-2xl bg-white rounded-xl shadow-lg p-6 mb-8 hidden">
             <h3 id="content-title" class="text-xl font-bold text-primary mb-4 text-center"></h3>
-            <div id="content-container" class="min-h-[200px] flex items-center justify-center"></div>
+            <div id="content-container" class="flex items-center justify-center"></div>
         </div>
         <div id="content-expired" class="hidden w-full max-w-2xl bg-white rounded-xl shadow-lg p-8 text-center text-gray-500">
             <i class="fa fa-exclamation-triangle text-4xl mb-3 text-yellow-500"></i>
@@ -237,10 +234,10 @@
         let targetLinkId = '';
         let targetContentData = null;
         
-        // 本地缓存相关（核心新增）
-        const LOCAL_STORAGE_KEY = 'link_views_cache'; // 本地存储键名
-        let viewsCache = {}; // 内存缓存对象 { linkId: 当前次数 }
-        let syncTimer = null; // 定期同步计时器
+        // 本地缓存相关
+        const LOCAL_STORAGE_KEY = 'link_views_cache';
+        let viewsCache = {};
+        let syncTimer = null;
 
         // DOM元素
         const el = {
@@ -258,6 +255,7 @@
             contentContainer: document.getElementById('content-container'),
             contentExpired: document.getElementById('content-expired'),
             backToTool: document.getElementById('back-to-tool'),
+            contentWrapper: document.getElementById('content-wrapper'),
             
             // 密码界面
             passwordScreen: document.getElementById('password-screen'),
@@ -310,15 +308,40 @@
             }, 3000);
         }
 
-        // 初始化Supabase
+        // 初始化Supabase - 延迟到需要时再初始化
         function initSupabase() {
             return new Promise((resolve, reject) => {
+                // 已初始化则直接返回
+                if (supabaseClient) {
+                    resolve();
+                    return;
+                }
+                
                 try {
                     const url = 'https://wjsjxwfdwkdxwybfnifz.supabase.co';
                     const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indqc2p4d2Zkd2tkeHd5YmZuaWZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3MzQxNDcsImV4cCI6MjA3MzMxMDE0N30.lXAqyRAfoHbZzdcuXyxG7vmjwsg1Pp4tT6HUE68zKTQ';
-                    supabaseClient = window.supabase.createClient(url, key);
-                    console.log('Supabase初始化成功');
-                    resolve();
+                    // 检查window.supabase是否加载完成
+                    if (window.supabase) {
+                        supabaseClient = window.supabase.createClient(url, key);
+                        console.log('Supabase初始化成功');
+                        resolve();
+                    } else {
+                        // 未加载完成则等待
+                        const checkSupabase = setInterval(() => {
+                            if (window.supabase) {
+                                clearInterval(checkSupabase);
+                                supabaseClient = window.supabase.createClient(url, key);
+                                console.log('Supabase初始化成功');
+                                resolve();
+                            }
+                        }, 100);
+                        
+                        // 超时处理
+                        setTimeout(() => {
+                            clearInterval(checkSupabase);
+                            reject(new Error('Supabase加载超时'));
+                        }, 5000);
+                    }
                 } catch (error) {
                     console.error('Supabase初始化失败:', error);
                     showToast('云端服务初始化失败，无法使用工具', true);
@@ -327,18 +350,18 @@
             });
         }
 
-        // 【本地缓存核心函数】从localStorage加载缓存
+        // 从localStorage加载缓存
         function loadLocalCache() {
             try {
                 const cached = localStorage.getItem(LOCAL_STORAGE_KEY);
                 return cached ? JSON.parse(cached) : {};
             } catch (error) {
                 console.error('加载本地缓存失败:', error);
-                return {}; // 失败时返回空对象
+                return {};
             }
         }
 
-        // 【本地缓存核心函数】保存缓存到localStorage
+        // 保存缓存到localStorage
         function saveLocalCache() {
             try {
                 localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(viewsCache));
@@ -347,47 +370,44 @@
             }
         }
 
-        // 【本地缓存核心函数】定期同步本地缓存到数据库（每30秒）
+        // 定期同步本地缓存到数据库（每30秒）
         function startSyncTimer() {
-            // 清除已有计时器
             if (syncTimer) clearInterval(syncTimer);
             
-            // 每30秒执行一次同步
             syncTimer = setInterval(async () => {
                 if (!supabaseClient || Object.keys(viewsCache).length === 0) return;
                 
                 console.log('开始定期同步本地缓存到数据库...');
-                for (const [linkId, localViews] of Object.entries(viewsCache)) {
-                    try {
-                        // 1. 获取数据库当前次数
-                        const { data: dbData } = await supabaseClient
-                            .from(TABLE_NAME)
-                            .select('current_views, max_views')
-                            .eq('id', linkId)
-                            .single();
-                        
-                        // 2. 冲突处理：以数据库次数为准（避免多设备不同步）
-                        if (dbData.current_views !== localViews) {
-                            console.log(`检测到冲突，以数据库为准（${linkId}）: 本地=${localViews}, 数据库=${dbData.current_views}`);
-                            viewsCache[linkId] = dbData.current_views;
-                            saveLocalCache();
-                            
-                            // 若数据库已达最大次数，立即失效
-                            if (dbData.current_views >= dbData.max_views) {
-                                showExpiredContent();
-                            }
-                        } else {
-                            // 3. 无冲突则同步本地更新
-                            await supabaseClient
+                // 使用Promise.allSettled避免单个失败影响整体
+                await Promise.allSettled(
+                    Object.entries(viewsCache).map(async ([linkId, localViews]) => {
+                        try {
+                            const { data: dbData } = await supabaseClient
                                 .from(TABLE_NAME)
-                                .update({ current_views: localViews })
-                                .eq('id', linkId);
+                                .select('current_views, max_views')
+                                .eq('id', linkId)
+                                .single();
+                            
+                            if (dbData.current_views !== localViews) {
+                                console.log(`检测到冲突，以数据库为准（${linkId}）: 本地=${localViews}, 数据库=${dbData.current_views}`);
+                                viewsCache[linkId] = dbData.current_views;
+                                saveLocalCache();
+                                
+                                if (dbData.current_views >= dbData.max_views) {
+                                    showExpiredContent();
+                                }
+                            } else {
+                                await supabaseClient
+                                    .from(TABLE_NAME)
+                                    .update({ current_views: localViews })
+                                    .eq('id', linkId);
+                            }
+                        } catch (error) {
+                            console.error(`同步${linkId}失败，将重试:`, error);
                         }
-                    } catch (error) {
-                        console.error(`同步${linkId}失败，将重试:`, error);
-                    }
-                }
-            }, 30000); // 30秒同步一次
+                    })
+                );
+            }, 30000);
         }
 
         // 密码验证
@@ -401,7 +421,13 @@
             if (password === VALID_PASSWORD) {
                 el.passwordScreen.classList.add('hidden');
                 el.mainScreen.classList.remove('hidden');
-                initSupabase().then(loadHistory);
+                // 延迟初始化Supabase和加载历史，优先显示界面
+                setTimeout(() => {
+                    initSupabase().then(() => {
+                        // 再次延迟加载历史记录，确保界面先渲染完成
+                        setTimeout(loadHistory, 300);
+                    });
+                }, 100);
                 return true;
             } else {
                 el.pwdError.classList.remove('hidden');
@@ -453,7 +479,7 @@
             }
         }
 
-        // 预览图片
+        // 预览图片 - 延迟处理以避免阻塞
         function previewImage(event) {
             const file = event.target.files[0];
             if (!file) {
@@ -461,12 +487,15 @@
                 return;
             }
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                el.imagePreview.src = e.target.result;
-                el.imagePreview.classList.remove('hidden');
-            };
-            reader.readAsDataURL(file);
+            // 使用setTimeout避免阻塞UI
+            setTimeout(() => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    el.imagePreview.src = e.target.result;
+                    el.imagePreview.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }, 50);
         }
 
         // 生成链接
@@ -488,6 +517,7 @@
                 } else if (type === 'image') {
                     const file = el.imageContent.files[0];
                     if (!file) throw new Error('请选择图片');
+                    // 使用Promise包装FileReader，避免嵌套
                     content = await new Promise((resolve) => {
                         const reader = new FileReader();
                         reader.onload = (e) => resolve(e.target.result);
@@ -495,22 +525,19 @@
                     });
                 }
 
-                // 生成唯一链接ID
                 const linkId = Math.random().toString(36).substring(2, 12);
                 const linkUrl = `${window.location.origin}${window.location.pathname}?id=${linkId}`;
 
-                // 准备链接数据
                 const linkData = {
                     id: linkId,
                     content: content,
                     type: type,
                     expiry: new Date(Date.now() + expiry * 60000).toISOString(),
                     max_views: maxViews,
-                    current_views: 0, // 初始访问次数
+                    current_views: 0,
                     created_at: new Date().toISOString()
                 };
 
-                // 保存数据到云端
                 if (supabaseClient) {
                     const { error } = await supabaseClient
                         .from(TABLE_NAME)
@@ -520,13 +547,13 @@
                     throw new Error('无法连接到云端，请稍后重试');
                 }
 
-                // 显示结果
                 el.generatedLink.value = linkUrl;
                 el.resultExpiry.textContent = expiry;
                 el.resultViews.textContent = maxViews;
                 el.result.classList.remove('hidden');
                 
-                loadHistory();
+                // 延迟加载历史，避免阻塞结果显示
+                setTimeout(loadHistory, 500);
                 showToast('链接生成成功');
             } catch (error) {
                 console.error('生成链接失败:', error);
@@ -562,6 +589,8 @@
                 
                 const displayLinks = historyExpanded ? links : links.slice(0, 3);
                 
+                // 批量创建DOM元素，减少重绘
+                const fragment = document.createDocumentFragment();
                 displayLinks.forEach(link => {
                     const item = document.createElement('div');
                     item.className = 'p-4 hover:bg-gray-50 transition-colors';
@@ -588,9 +617,11 @@
                             </button>
                         </div>
                     `;
-                    el.historyList.appendChild(item);
+                    fragment.appendChild(item);
                 });
+                el.historyList.appendChild(fragment);
 
+                // 批量绑定事件
                 document.querySelectorAll('.copy-history-btn').forEach(btn => {
                     btn.addEventListener('click', function() {
                         const link = this.previousElementSibling.value;
@@ -646,48 +677,43 @@
 
         // 提交建议并显示目标内容
         function handleFeedbackSubmit() {
-    const gameName = el.gameName.value.trim();
-    const gameServer = el.gameServer.value.trim();
-    const gameFeedback = el.gameFeedback.value.trim();
+            const gameName = el.gameName.value.trim();
+            const gameServer = el.gameServer.value.trim();
+            const gameFeedback = el.gameFeedback.value.trim();
 
-    if (!gameName || !gameServer || !gameFeedback) {
-        el.feedbackError.classList.remove('hidden');
-        return;
-    }
+            if (!gameName || !gameServer || !gameFeedback) {
+                el.feedbackError.classList.remove('hidden');
+                return;
+            }
 
-    el.feedbackForm.classList.add('hidden');
-    
-    // 关键代码：在提示方框内显示指定文案
-    showToast('感谢您的反馈/建议！');
+            el.feedbackForm.classList.add('hidden');
+            el.contentWrapper.classList.remove('hidden');
+            el.contentTitle.textContent = '提交成功';
+            el.contentContainer.innerHTML = '<p class="text-lg text-gray-700 text-center">感谢您的反馈/建议！</p>';
+            
+            if (targetContentData.type === 'url') {
+                setTimeout(() => {
+                    window.open(targetContentData.content, '_blank');
+                    window.close();
+                }, 1500);
+            }
+        }
 
-    if (targetContentData.type === 'url') {
-        window.open(targetContentData.content, '_blank');
-        window.close();
-    } else {
-        el.contentTitle.textContent = getContentTitle(targetContentData.type);
-        el.contentContainer.innerHTML = getContentHtml(targetContentData);
-    }
-}
-
-        // 【核心优化】加载链接内容（本地缓存+定期同步方案）
+        // 加载链接内容
         async function loadLinkContent(linkId) {
-            // 1. 初始化本地缓存和同步计时器
             viewsCache = loadLocalCache();
             startSyncTimer();
 
             try {
-                // 2. 从数据库获取链接基本信息（含最大次数）
                 const { data: linkData, error: fetchError } = await supabaseClient
                     .from(TABLE_NAME)
                     .select('*')
                     .eq('id', linkId)
                     .single();
 
-                // 3. 处理数据库访问失败（离线场景）
                 if (fetchError) {
                     console.log('数据库访问失败，使用本地缓存判断');
                     const localViews = viewsCache[linkId] || 0;
-                    // 假设最大次数为3（离线时无法获取，可改为从本地缓存读取上次保存的max_views）
                     const maxViews = 3; 
                     
                     if (localViews > maxViews) {
@@ -695,32 +721,28 @@
                         return;
                     }
                 } else {
-                    // 4. 数据库可用时，先检查是否过期
                     const now = new Date();
                     if (now > new Date(linkData.expiry)) {
                         showExpiredContent();
                         return;
                     }
 
-                    // 5. 初始化本地缓存（若首次访问）
                     if (viewsCache[linkId] === undefined) {
                         viewsCache[linkId] = linkData.current_views;
                         saveLocalCache();
                     }
 
-                    // 6. 本地优先判断：是否已达最大次数
                     if (viewsCache[linkId] > linkData.max_views) {
                         showExpiredContent();
                         return;
                     }
                 }
 
-                // 7. 更新本地缓存（立即生效，无需等待网络）
                 viewsCache[linkId] = (viewsCache[linkId] || 0) + 1;
                 saveLocalCache();
 
-                // 8. 异步同步到数据库（不阻塞用户操作）
                 if (supabaseClient) {
+                    // 异步更新，不阻塞UI
                     supabaseClient
                         .from(TABLE_NAME)
                         .update({ current_views: viewsCache[linkId] })
@@ -733,11 +755,9 @@
                         });
                 }
 
-                // 9. 最终判断：是否超过最大次数
                 if (linkData && viewsCache[linkId] > linkData.max_views) {
                     showExpiredContent();
                 } else {
-                    // 10. 显示内容
                     targetContentData = linkData;
                     el.contentScreen.classList.remove('hidden');
                     el.feedbackForm.classList.remove('hidden');
@@ -788,14 +808,28 @@
         // 显示链接过期信息
         function showExpiredContent() {
             el.feedbackForm.classList.add('hidden');
+            el.contentWrapper.classList.add('hidden');
             el.contentScreen.classList.remove('hidden');
-            el.contentContainer.parentElement.classList.add('hidden');
             el.contentExpired.classList.remove('hidden');
             el.backToTool.classList.add('hidden');
         }
 
-        // 绑定事件
+        // 绑定事件 - 使用事件委托减少初始绑定
         function bindEvents() {
+            // 委托处理动态生成的元素事件
+            document.addEventListener('click', (e) => {
+                // 历史记录复制按钮
+                if (e.target.closest('.copy-history-btn')) {
+                    const btn = e.target.closest('.copy-history-btn');
+                    const link = btn.previousElementSibling.value;
+                    navigator.clipboard.writeText(link)
+                        .then(() => showToast('链接已复制'))
+                        .catch(err => showToast('复制失败', true));
+                    return;
+                }
+            });
+
+            // 其他固定元素事件
             el.submitFeedback.addEventListener('click', handleFeedbackSubmit);
             el.verifyBtn.addEventListener('click', verifyPassword);
             el.togglePwd.addEventListener('click', togglePassword);
@@ -826,47 +860,50 @@
             el.backToTool.addEventListener('click', () => {
                 el.contentScreen.classList.add('hidden');
                 el.contentExpired.classList.add('hidden');
-                el.contentContainer.parentElement.classList.remove('hidden');
+                el.contentWrapper.classList.add('hidden');
                 el.passwordScreen.classList.remove('hidden');
             });
         }
 
-        // 初始化
+        // 初始化 - 轻量启动
         document.addEventListener('DOMContentLoaded', () => {
+            // 立即绑定关键事件
             bindEvents();
             
             // 检查是否是访问生成的链接
             const linkId = getLinkIdFromUrl();
             if (linkId) {
                 targetLinkId = linkId;
-                // 初始化缓存
                 viewsCache = loadLocalCache();
-                initSupabase().then(() => {
-                    loadLinkContent(linkId);
-                });
+                // 延迟初始化Supabase，优先显示界面
+                setTimeout(() => {
+                    initSupabase().then(() => {
+                        loadLinkContent(linkId);
+                    });
+                }, 100);
             } else {
+                // 立即显示密码界面，不等待其他资源
                 el.passwordScreen.classList.remove('hidden');
             }
         });
 
-        // 页面关闭时最后一次同步
+        // 页面关闭时同步 - 使用requestIdleCallback避免阻塞
         window.addEventListener('beforeunload', () => {
             if (supabaseClient && Object.keys(viewsCache).length > 0) {
-                // 同步所有缓存到数据库（同步操作，确保执行）
-                Object.entries(viewsCache).forEach(async ([linkId, views]) => {
-                    try {
-                        await supabaseClient
-                            .from(TABLE_NAME)
-                            .update({ current_views: views })
-                            .eq('id', linkId);
-                        console.log(`页面关闭时同步成功：${linkId}`);
-                    } catch (error) {
-                        console.error(`页面关闭时同步失败：${linkId}`, error);
-                    }
+                requestIdleCallback(() => {
+                    Object.entries(viewsCache).forEach(async ([linkId, views]) => {
+                        try {
+                            await supabaseClient
+                                .from(TABLE_NAME)
+                                .update({ current_views: views })
+                                .eq('id', linkId);
+                            console.log(`页面关闭时同步成功：${linkId}`);
+                        } catch (error) {
+                            console.error(`页面关闭时同步失败：${linkId}`, error);
+                        }
+                    });
                 });
             }
         });
     </script>
 </body></html>
-
-
