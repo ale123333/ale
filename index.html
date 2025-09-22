@@ -18,22 +18,26 @@
         }
     </script>
     <style type="text/tailwindcss">
-        @layer utilities {
-            .btn-effect {
-                @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5;
-            }
-            .input-focus {
-                @apply focus:ring-2 focus:ring-primary focus:border-primary outline-none;
-            }
-            .shake {
-                animation: shake 0.5s;
-            }
-            @keyframes shake {
-                0%, 100% { transform: translateX(0); }
-                10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-                20%, 40%, 60%, 80% { transform: translateX(5px); }
-            }
-        }
+       @layer utilities {
+    /* 新增：限制提示框最大宽度 */
+    #toast {
+        max-w-xs; /* 限制宽度为20rem，可按需改为max-w-sm（24rem）等 */
+    }
+    .btn-effect {
+        @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5;
+    }
+    .input-focus {
+        @apply focus:ring-2 focus:ring-primary focus:border-primary outline-none;
+    }
+    .shake {
+        animation: shake 0.5s;
+    }
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+        20%, 40%, 60%, 80% { transform: translateX(5px); }
+    }
+}
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen font-sans">
@@ -642,25 +646,28 @@
 
         // 提交建议并显示目标内容
         function handleFeedbackSubmit() {
-            const gameName = el.gameName.value.trim();
-            const gameServer = el.gameServer.value.trim();
-            const gameFeedback = el.gameFeedback.value.trim();
+    const gameName = el.gameName.value.trim();
+    const gameServer = el.gameServer.value.trim();
+    const gameFeedback = el.gameFeedback.value.trim();
 
-            if (!gameName || !gameServer || !gameFeedback) {
-                el.feedbackError.classList.remove('hidden');
-                return;
-            }
+    if (!gameName || !gameServer || !gameFeedback) {
+        el.feedbackError.classList.remove('hidden');
+        return;
+    }
 
-            el.feedbackForm.classList.add('hidden');
-            
-            if (targetContentData.type === 'url') {
-                window.open(targetContentData.content, '_blank');
-                window.close();
-            } else {
-                el.contentTitle.textContent = getContentTitle(targetContentData.type);
-                el.contentContainer.innerHTML = getContentHtml(targetContentData);
-            }
-        }
+    el.feedbackForm.classList.add('hidden');
+    
+    // 关键代码：在提示方框内显示指定文案
+    showToast('感谢您的反馈/建议！');
+
+    if (targetContentData.type === 'url') {
+        window.open(targetContentData.content, '_blank');
+        window.close();
+    } else {
+        el.contentTitle.textContent = getContentTitle(targetContentData.type);
+        el.contentContainer.innerHTML = getContentHtml(targetContentData);
+    }
+}
 
         // 【核心优化】加载链接内容（本地缓存+定期同步方案）
         async function loadLinkContent(linkId) {
@@ -861,4 +868,5 @@
         });
     </script>
 </body></html>
+
 
