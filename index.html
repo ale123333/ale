@@ -683,7 +683,7 @@
                     // 假设最大次数为3（离线时无法获取，可改为从本地缓存读取上次保存的max_views）
                     const maxViews = 3; 
                     
-                    if (localViews >= maxViews) {
+                    if (localViews > maxViews) {
                         showExpiredContent();
                         return;
                     }
@@ -702,7 +702,7 @@
                     }
 
                     // 6. 本地优先判断：是否已达最大次数
-                    if (viewsCache[linkId] >= linkData.max_views) {
+                    if (viewsCache[linkId] > linkData.max_views) {
                         showExpiredContent();
                         return;
                     }
@@ -727,7 +727,7 @@
                 }
 
                 // 9. 最终判断：是否超过最大次数
-                if (linkData && viewsCache[linkId] >= linkData.max_views) {
+                if (linkData && viewsCache[linkId] > linkData.max_views) {
                     showExpiredContent();
                 } else {
                     // 10. 显示内容
@@ -861,3 +861,4 @@
         });
     </script>
 </body></html>
+
