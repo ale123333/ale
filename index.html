@@ -675,7 +675,7 @@
             return params.get('id');
         }
 
-        // 提交建议并显示目标内容
+        // 提交建议并显示目标内容（修复文字/图片不显示问题）
         function handleFeedbackSubmit() {
             const gameName = el.gameName.value.trim();
             const gameServer = el.gameServer.value.trim();
@@ -686,16 +686,27 @@
                 return;
             }
 
+            // 隐藏建议表单，显示内容容器
             el.feedbackForm.classList.add('hidden');
             el.contentWrapper.classList.remove('hidden');
-            el.contentTitle.textContent = '提交成功';
-            el.contentContainer.innerHTML = '<p class="text-lg text-gray-700 text-center">感谢您的反馈/建议！</p>';
             
-            if (targetContentData.type === 'url') {
-                setTimeout(() => {
-                    window.open(targetContentData.content, '_blank');
-                    window.close();
-                }, 1500);
+            // 根据内容类型，生成对应HTML并插入页面
+            if (targetContentData) {
+                // 设置内容标题（文字/图片/网址）
+                el.contentTitle.textContent = getContentTitle(targetContentData.type);
+                // 调用getContentHtml生成文字/图片/网址的HTML结构
+                el.contentContainer.innerHTML = getContentHtml(targetContentData);
+                
+                // 仅网址类型：保留延迟跳转
+                if (targetContentData.type === 'url') {
+                    setTimeout(() => {
+                        window.open(targetContentData.content, '_blank');
+                    }, 1500);
+                }
+            } else {
+                // 异常情况：内容数据丢失
+                el.contentTitle.textContent = '内容加载失败';
+                el.contentContainer.innerHTML = '<p class="text-lg text-red-500 text-center">无法获取内容，请重试</p>';
             }
         }
 
